@@ -16,7 +16,7 @@ struct rs{
     char adress[63];
     char port[63];
 };
-
+ 
 struct input{
     struct stream stream_id;
     char ipaddr[63];
