@@ -7,12 +7,12 @@ struct stream{
     char name[63];
     char ip[63];
     char port[63];
-} stream;
+};
 
 struct rs{
     char adress[63];
     char port[63];
-}rs;
+};
 
 struct input{
     struct stream stream_id;
@@ -23,7 +23,7 @@ struct input{
     char tcpsessions[63];
     char bestpops[63];
     char tsecs[63];
-}input;
+};
 
 int main ( int argc, char *argv[] )
 {
