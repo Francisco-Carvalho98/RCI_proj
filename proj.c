@@ -3,6 +3,9 @@
 #include <unistd.h>
 #include <string.h>
 
+
+enum flag {on, off};
+
 struct stream{
     char name[63];
     char ip[63];
@@ -23,11 +26,14 @@ struct input{
     char tcpsessions[63];
     char bestpops[63];
     char tsecs[63];
+    enum flag display;
+    enum flag advanced;
+    enum flag help;
 };
 
 int main ( int argc, char *argv[] )
 {
-    struct input;
+    struct input input;
     char buffer[256];
     char *token;
 

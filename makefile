@@ -1,3 +1,3 @@
-iamroot: iamroot.c
-	gcc -Wall iamroot.c -o iamroot
+iamroot: proj.c
+	gcc -Wall proj.c -o iamroot
 
