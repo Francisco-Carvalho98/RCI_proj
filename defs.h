@@ -1,3 +1,5 @@
+#ifndef _DEFS_H
+#define _DEFS_H
 
 
 enum flag {on, off};
@@ -26,3 +28,8 @@ struct input{
     enum flag advanced;
     enum flag help;
 };
+
+void inputHandler (struct input *, char **, int);
+
+
+#endif
