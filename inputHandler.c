@@ -56,3 +56,7 @@ void inputHandler (struct input *input, char **argv, int argc){
 
     return;
 }
+
+void display_help (){
+    return;
+}

@@ -30,6 +30,7 @@ struct input{
 };
 
 void inputHandler (struct input *, char **, int);
+void display_help ();
 
 
 #endif
