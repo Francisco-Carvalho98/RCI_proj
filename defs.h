@@ -2,7 +2,7 @@
 #define _DEFS_H
 
 
-enum flag {on, off};
+enum flag {off, on};
 
 struct stream{
     char name[63];
