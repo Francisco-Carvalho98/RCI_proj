@@ -34,29 +34,29 @@ struct input{
 int main ( int argc, char *argv[] )
 {
     struct input input;
-    char buffer[256];
     char *token;
+    int cont = 4;
 
-    write(1,"iamroot\t",8);
-    scanf("%[^\n]", buffer);
-
-    token = strtok(buffer,":");
+    // STREAM NAME
+    token = strtok(argv[1],":");
     strcpy(input.stream_id.name,token);
     printf("%s\n",input.stream_id.name);
 
+    // STREAM IP
     token = strtok(NULL,":");
     strcpy(input.stream_id.ip,token);
     printf("%s\n",input.stream_id.ip);
 
+    // STREAM PORT
     token = strtok(NULL," ");
     strcpy(input.stream_id.port,token);
     printf("%s\n",input.stream_id.port);
-    
-    token = strtok(NULL," ");
-    token = strtok(NULL," ");
-    strcpy(input.ipaddr,token);
-    printf("%s\n",input.ipaddr); 
 
+    // IPADDR
+    strcpy(input.ipaddr,argv[3]);
+    printf("%s\n",input.ipaddr);
+
+    // DEFAULT
     strcpy(input.tport,"58000");
     strcpy(input.uport,"58000");
     strcpy(input.rs_id.adress,"193.136.138.142");
@@ -65,28 +65,24 @@ int main ( int argc, char *argv[] )
     strcpy(input.bestpops,"1");
     strcpy(input.tsecs,"5");
 
-    token = strtok(NULL," ");
-
-    while (token != NULL)
+    // MORE ARGUMENTS ?
+    while (cont < argc )
     {
-
-        if (strcmp(token,"-t") == 0)
+        if (strcmp(argv[cont],"-t") == 0)
         {
-            token = strtok(NULL," ");
-            strcpy(input.tport,token);
+            strcpy(input.tport,argv[cont + 1]);
             printf("%s\n",input.tport); 
         }
 
-        if (strcmp(token,"-u") == 0)
+        if (strcmp(argv[cont],"-u") == 0)
         {
-            token = strtok(NULL," ");
-            strcpy(input.uport,token);
+            strcpy(input.uport,argv[cont + 1]);
             printf("%s\n",input.uport); 
         }
 
-        if (strcmp(token,"-s") == 0)
+        if (strcmp(argv[cont],"-s") == 0)
         {
-            token = strtok(NULL,":");
+            token = strtok(argv[cont+1],":");
             strcpy(input.rs_id.adress,token);
             printf("%s\n",input.rs_id.adress);
 
@@ -95,43 +91,41 @@ int main ( int argc, char *argv[] )
             printf("%s\n",input.rs_id.port);
         }
 
-        if (strcmp(token,"-p") == 0)
+        if (strcmp(argv[cont],"-p") == 0)
         {
-            token = strtok(NULL," ");
-            strcpy(input.tcpsessions,token);
+            strcpy(input.tcpsessions,argv[cont +1]);
             printf("%s\n",input.tcpsessions);
         }
 
-        if (strcmp(token,"-n") == 0)
+        if (strcmp(argv[cont],"-n") == 0)
         {
-            token = strtok(NULL," ");
-            strcpy(input.bestpops,token);
+            strcpy(input.bestpops,argv[cont +1]);
             printf("%s\n",input.bestpops);
         }
 
-        if (strcmp(token,"-x") == 0)
+        if (strcmp(argv[cont],"-x") == 0)
         {
-            token = strtok(NULL," ");
-            strcpy(input.tsecs,token);
+            strcpy(input.tsecs,argv[cont +1]);
             printf("%s\n",input.tsecs);
         }
         
-        if (strcmp(token,"-b") == 0)
+        if (strcmp(argv[cont],"-b") == 0)
         {
            /* To be continued */
         }
 
-        if (strcmp(token,"-d") == 0)
+        if (strcmp(argv[cont],"-d") == 0)
         {
            /* To be continued */
         }
 
-        if (strcmp(token,"-h") == 0)
+        if (strcmp(argv[cont],"-h") == 0)
         {
            /* To be continued */
         }
 
-        token= strtok(NULL," ");
-    }
+        cont++;
+    } 
 
+ return 0;
 }
