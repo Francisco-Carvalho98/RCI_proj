@@ -57,13 +57,6 @@ void inputHandler (struct input *input, char **argv, int argc){
     token = strtok(NULL," ");
     strcpy(input->stream_id.port,token);
 
-
-    printf("StreamID: %s:%s:%s\n", input->stream_id.name, input->stream_id.ip, input->stream_id.port);
-    printf("Self IP, TCP and UDP ports: %s - %s - %s\n", input->ipaddr, input->tport, input->uport);
-    printf("Root Server: %s:%s\n", input->rs_id.adress, input->rs_id.port);
-    printf("Application variables: %s (sessions) - %s (bestp) - %s (tsecs)\n", input->tcpsessions, input->bestpops, input->tsecs);
-    printf("Flags: %d %d %d\n", input->display, input->advanced, input->help);
-    
     return;
 }
 
