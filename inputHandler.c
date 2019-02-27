@@ -8,6 +8,9 @@ void inputHandler (struct input *input, char **argv, int argc){
     
     char *token;
 
+
+    if (argc == 1) {printf("Not enough arguments");exit(0);}
+
     // DEFAULT DONE
     strcpy(input->tport,"58000");
     strcpy(input->uport,"58000");
