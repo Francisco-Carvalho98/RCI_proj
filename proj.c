@@ -4,38 +4,88 @@
 #include <string.h>
 
 
-enum flag {on, off};
-
-struct stream{
-    char name[63];
-    char ip[63];
-    char port[63];
-};
-
-struct rs{
-    char adress[63];
-    char port[63];
-};
- 
-struct input{
-    struct stream stream_id;
-    char ipaddr[63];
-    char tport[63];
-    char uport[63];
-    struct rs rs_id;
-    char tcpsessions[63];
-    char bestpops[63];
-    char tsecs[63];
-    enum flag display;
-    enum flag advanced;
-    enum flag help;
-};
+#include "struct.h"
 
 int main ( int argc, char *argv[] )
 {
     struct input input;
     char *token;
-    int cont = 4;
+
+    system("clear");
+    //inputHandler();
+    
+    // DEFAULT DONE
+    strcpy(input.tport,"58000");
+    strcpy(input.uport,"58000");
+    strcpy(input.rs_id.adress,"193.136.138.142");
+    strcpy(input.rs_id.port,"59000");
+    strcpy(input.tcpsessions,"1");
+    strcpy(input.bestpops,"1");
+    strcpy(input.tsecs,"5");
+    input.display = on;
+    input.advanced = off;
+    input.help = off;
+
+
+    // LOOKS FOR FLAGS
+    for (int i = 1; i < argc; i++){
+        if (strcmp(argv[i],"-i") == 0){  
+            // IPADDR
+            strcpy(input.ipaddr,argv[i+1]);
+            printf("%s\n",input.ipaddr);
+        }
+
+        if (strcmp(argv[i],"-t") == 0){
+            strcpy(input.tport,argv[i + 1]);
+            printf("%s\n",input.tport); 
+        }
+
+        if (strcmp(argv[i],"-u") == 0){
+            strcpy(input.uport,argv[i + 1]);
+            printf("%s\n",input.uport); 
+        }
+
+        if (strcmp(argv[i],"-s") == 0){
+            token = strtok(argv[i+1],":");
+            strcpy(input.rs_id.adress,token);
+            printf("%s\n",input.rs_id.adress);
+
+            token = strtok(NULL," ");
+            strcpy(input.rs_id.port,token);
+            printf("%s\n",input.rs_id.port);
+        }
+
+        if (strcmp(argv[i],"-p") == 0){
+            strcpy(input.tcpsessions,argv[i +1]);
+            printf("%s\n",input.tcpsessions);
+        }
+
+        if (strcmp(argv[i],"-n") == 0){
+            strcpy(input.bestpops,argv[i +1]);
+            printf("%s\n",input.bestpops);
+        }
+
+        if (strcmp(argv[i],"-x") == 0){
+            strcpy(input.tsecs,argv[i +1]);
+            printf("%s\n",input.tsecs);
+        }
+        
+        if (strcmp(argv[i],"-b") == 0){
+           input.display = off;
+        }
+
+        if (strcmp(argv[i],"-d") == 0){
+           input.advanced = on;
+        }
+
+        if (strcmp(argv[i],"-h") == 0){
+            input.help = on;
+           
+        }
+    } 
+
+
+    if (input.help == on) exit(0);
 
     // STREAM NAME
     token = strtok(argv[1],":");
@@ -52,80 +102,6 @@ int main ( int argc, char *argv[] )
     strcpy(input.stream_id.port,token);
     printf("%s\n",input.stream_id.port);
 
-    // IPADDR
-    strcpy(input.ipaddr,argv[3]);
-    printf("%s\n",input.ipaddr);
-
-    // DEFAULT
-    strcpy(input.tport,"58000");
-    strcpy(input.uport,"58000");
-    strcpy(input.rs_id.adress,"193.136.138.142");
-    strcpy(input.rs_id.port,"59000");
-    strcpy(input.tcpsessions,"1");
-    strcpy(input.bestpops,"1");
-    strcpy(input.tsecs,"5");
-
-    // MORE ARGUMENTS ?
-    while (cont < argc )
-    {
-        if (strcmp(argv[cont],"-t") == 0)
-        {
-            strcpy(input.tport,argv[cont + 1]);
-            printf("%s\n",input.tport); 
-        }
-
-        if (strcmp(argv[cont],"-u") == 0)
-        {
-            strcpy(input.uport,argv[cont + 1]);
-            printf("%s\n",input.uport); 
-        }
-
-        if (strcmp(argv[cont],"-s") == 0)
-        {
-            token = strtok(argv[cont+1],":");
-            strcpy(input.rs_id.adress,token);
-            printf("%s\n",input.rs_id.adress);
-
-            token = strtok(NULL," ");
-            strcpy(input.rs_id.port,token);
-            printf("%s\n",input.rs_id.port);
-        }
-
-        if (strcmp(argv[cont],"-p") == 0)
-        {
-            strcpy(input.tcpsessions,argv[cont +1]);
-            printf("%s\n",input.tcpsessions);
-        }
-
-        if (strcmp(argv[cont],"-n") == 0)
-        {
-            strcpy(input.bestpops,argv[cont +1]);
-            printf("%s\n",input.bestpops);
-        }
-
-        if (strcmp(argv[cont],"-x") == 0)
-        {
-            strcpy(input.tsecs,argv[cont +1]);
-            printf("%s\n",input.tsecs);
-        }
-        
-        if (strcmp(argv[cont],"-b") == 0)
-        {
-           /* To be continued */
-        }
-
-        if (strcmp(argv[cont],"-d") == 0)
-        {
-           /* To be continued */
-        }
-
-        if (strcmp(argv[cont],"-h") == 0)
-        {
-           /* To be continued */
-        }
-
-        cont++;
-    } 
-
- return 0;
+    printf("saiu bem\n");
+    return 0;
 }
