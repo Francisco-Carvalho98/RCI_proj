@@ -1,7 +1,7 @@
 CFLAGS= -Wall
 
 iamroot: proj.o inputHandler.o UDP_client.o packetHandler.o
-	gcc -o iamroot proj.o inputHandler.o UDP_client.o $(CFLAGS)
+	gcc -o iamroot proj.o inputHandler.o UDP_client.o packetHandler.o $(CFLAGS)
 
 proj.o: proj.c defs.h
 	gcc $(CFLAGS) -c proj.c 
