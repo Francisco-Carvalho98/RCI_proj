@@ -29,8 +29,12 @@ struct input{
     enum flag help;
 };
 
-void inputHandler (struct input *, char **, int);
+//inputHandler.c
+void inputHandler (char **, int);
 void display_help ();
+
+//UDP_client.c
+void udp_client(char *, int);
 
 
 #endif
