@@ -29,9 +29,9 @@ void udp_client (int key, char *message){
     freeaddrinfo(res);
 
     addrlen=sizeof(addr);
-    memset(message,0,strlen(message));
+    memset(message,0,strlen(message));//message variable reused to save received message
 
-    if (key!=1){//condition when REMOVE is sent and no answer is given
+    if (key!=1){//condition when REMOVE is sent and no answer is expected. would get stuck on recvfrom
         n=recvfrom(fd,message,256,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen);
         if(n==-1) exit(1);
 
