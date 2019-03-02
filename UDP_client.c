@@ -16,7 +16,6 @@ void udp_client (int key, char *message){
     struct addrinfo hints,*res;
     int fd,n, addrlen;
     struct sockaddr_in addr;
-    char buffer[128];
     int errcode;
     char host[NI_MAXHOST],service[NI_MAXSERV];//consts in <netdb.h>
     
@@ -35,18 +34,17 @@ void udp_client (int key, char *message){
     
     n=sendto(fd,message,strlen(message),0,res->ai_addr,res->ai_addrlen);
     if(n==-1) exit(1); 
-    
+
     freeaddrinfo(res);
 
     addrlen=sizeof(addr);
+    memset(message,0,strlen(message));
 
-    if (key==0){    
-        n=recvfrom(fd,buffer,128,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen);
+    if (key!=1){    
+        n=recvfrom(fd,message,64,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen);
         if(n==-1) exit(1);
-        
-        udp_decoder(buffer);
 
-        write(1,buffer,n);
+        write(1,message,n);
     
         if((errcode=getnameinfo((struct sockaddr *)&addr,addrlen,host,sizeof host,service,sizeof service,0))!=0)
             fprintf(stderr,"error: getnameinfo: %s\n",gai_strerror(errcode));

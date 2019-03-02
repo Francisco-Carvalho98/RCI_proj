@@ -29,6 +29,11 @@ struct input{
     enum flag help;
 };
 
+struct message{
+    char command[32];
+    char args[32][10];
+};
+
 //inputHandler.c
 void inputHandler (char **, int);
 void display_help ();
@@ -37,8 +42,8 @@ void display_help ();
 void udp_client(int, char *);
 
 //packetHandler.c
-char * udp_encoder (char *, char *);
-void udp_decoder (char *);
+void udp_encoder (char *, char *);
+void udp_decoder (char *, struct message *);
 
 
 #endif

@@ -9,6 +9,7 @@ extern struct input input;
 void inputHandler (char **argv, int argc){
     
     char *token;
+    char buffer[64];
 
     // DEFAULT DONE
     strcpy(input.tport,"58000");
@@ -24,7 +25,8 @@ void inputHandler (char **argv, int argc){
 
     if (argc == 1) {
         display_help();
-        udp_client(0, "DUMP\n");
+        strcpy(buffer, "DUMP\n");
+        udp_client(0, buffer);
         exit(0);}
 
     // LOOKS FOR FLAGS
