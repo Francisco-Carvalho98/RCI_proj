@@ -1,9 +1,5 @@
 #include "defs.h"
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 extern struct input input;
 
 void udp_encoder (char *command, char *message){

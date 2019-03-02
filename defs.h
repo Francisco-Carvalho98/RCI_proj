@@ -1,6 +1,15 @@
 #ifndef _DEFS_H
 #define _DEFS_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <string.h>
+#include <signal.h>
 
 enum flag {off, on};
 
@@ -38,8 +47,11 @@ struct message{
 void inputHandler (char **, int);
 void display_help ();
 
-//UDP_client.c
+//udp_client.c
 void udp_client(int, char *);
+
+//tcp_client.c
+int tcp_client();
 
 //packetHandler.c
 void udp_encoder (char *, char *);

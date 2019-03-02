@@ -1,14 +1,5 @@
 #include "defs.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <string.h>
-
 extern struct input input;
 
 void udp_client (int key, char *message){
