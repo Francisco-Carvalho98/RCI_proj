@@ -10,8 +10,6 @@ void inputHandler (char **argv, int argc){
     
     char *token;
 
-    if (argc == 1) {printf("Not enough arguments\n");exit(0);}
-
     // DEFAULT DONE
     strcpy(input.tport,"58000");
     strcpy(input.uport,"58000");
@@ -24,6 +22,10 @@ void inputHandler (char **argv, int argc){
     input.advanced = off;
     input.help = off;
 
+    if (argc == 1) {
+        display_help();
+        udp_client(0, "DUMP\n");
+        exit(0);}
 
     // LOOKS FOR FLAGS
     for (int i = 1; i < argc; i++){
@@ -66,6 +68,15 @@ void display_help (){
     printf("\t\t       [-s <rsaddr>[:<rsport>]]\n");
     printf("\t\t       [-p <tcpsessions>]\n");
     printf("\t\t       [-n <bestpops>] [-x <tsecs>]\n");
-    printf("\t\t       [-b] [-d] [-h]\n");
+    printf("\t\t       [-b] [-d] [-h]\n\n\n");
     return; 
+}
+
+void print_input8(){
+    printf("StreamID: %s:%s:%s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
+    printf("Self IP, TCP and UDP ports: %s - %s - %s\n", input.ipaddr, input.tport, input.uport);
+    printf("Root Server: %s:%s\n", input.rs_id.adress, input.rs_id.port);
+    printf("Application variables: %s (sessions) - %s (bestp) - %s (tsecs)\n", input.tcpsessions, input.bestpops, input.tsecs);
+    printf("Flags: %d %d %d\n", input.display, input.advanced, input.help);
+    return;
 }

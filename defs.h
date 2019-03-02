@@ -34,9 +34,11 @@ void inputHandler (char **, int);
 void display_help ();
 
 //UDP_client.c
-void udp_client(char *, int);
+void udp_client(int, char *);
 
 //packetHandler.c
+char * udp_encoder (char *, char *);
+void udp_decoder (char *);
 
 
 #endif
