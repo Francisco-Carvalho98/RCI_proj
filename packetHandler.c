@@ -19,11 +19,10 @@ void udp_encoder (char *command, char *message){
 }
 
 void udp_decoder (char *message, struct message *decoded){
-    
-    int i;
-    if ((i = sscanf(message, "%s %s", decoded->command, decoded->args[0])) == 2) return;
-        
-    printf("%d\n", i);
 
+    
     if (sscanf(message, "%s %s %s", decoded->command, decoded->args[0], decoded->args[1]) == 3) return;
+
+    if (sscanf(message, "%s %s", decoded->command, decoded->args[0]) == 2) return;
+        
 }

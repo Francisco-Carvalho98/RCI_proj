@@ -31,8 +31,8 @@ void udp_client (int key, char *message){
     addrlen=sizeof(addr);
     memset(message,0,strlen(message));
 
-    if (key!=1){    
-        n=recvfrom(fd,message,64,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen);
+    if (key!=1){//condition when REMOVE is sent and no answer is given
+        n=recvfrom(fd,message,256,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen);
         if(n==-1) exit(1);
 
         write(1,message,n);

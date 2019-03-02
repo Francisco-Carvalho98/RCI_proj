@@ -74,7 +74,7 @@ void display_help (){
     return; 
 }
 
-void print_input8(){
+void print_input(){
     printf("StreamID: %s:%s:%s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
     printf("Self IP, TCP and UDP ports: %s - %s - %s\n", input.ipaddr, input.tport, input.uport);
     printf("Root Server: %s:%s\n", input.rs_id.adress, input.rs_id.port);

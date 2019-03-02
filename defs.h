@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/select.h>
 
 enum flag {off, on};
 
@@ -40,7 +41,7 @@ struct input{
 
 struct message{
     char command[32];
-    char args[32][10];
+    char args[2][64];
 };
 
 //inputHandler.c
@@ -51,7 +52,7 @@ void display_help ();
 void udp_client(int, char *);
 
 //tcp_client.c
-int tcp_client();
+int tcp_client(int);
 
 //packetHandler.c
 void udp_encoder (char *, char *);
