@@ -42,7 +42,7 @@ struct input{
 struct message{
     char command[32];
     char args[2][64];
-    struct ipport address;
+    struct ipport address; //used for tcp_client
 };
 
 //inputHandler.c
