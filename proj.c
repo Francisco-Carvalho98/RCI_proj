@@ -14,8 +14,17 @@ int main (int argc, char **argv)
     udp_encoder("WHOISROOT", buffer); //builds WHOISROOT protocol message
     udp_client(0, buffer); //sends the built message
     udp_decoder(buffer, &message); //decodes received message
-    if (strcmp(message.command, "URROOT") == 0) ctcp_fd = tcp_client(0); //connects to stream source
-    //falta criar o server de acesso aqui
+    if (strcmp(message.command, "URROOT") == 0){//node is root
+        ctcp_fd = tcp_client(0); //connects to stream source
+        //TODO 
+        //initialize udp access server
+        //initialize tcp stream server
+    }else if (strcmp(message.command, "ROOTIS") == 0){//node isnt root
+        strcpy(buffer, "POPREQ\n");//build message
+        udp_client(0, buffer);//send it
+        udp_decoder(buffer, &message);//decode received message
+
+    }else exit(EXIT_FAILURE);
 
     fd_set rfds;
     int counter, n;

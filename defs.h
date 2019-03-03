@@ -20,7 +20,7 @@ struct stream{
     char port[63];
 };
 
-struct rs{
+struct ipport{
     char adress[63];
     char port[63];
 };
@@ -30,7 +30,7 @@ struct input{
     char ipaddr[63]; // self ip
     char tport[63]; //self tcp port (downlink server)
     char uport[63]; //self udp port (access server)
-    struct rs rs_id; //root server ip and port
+    struct ipport rs_id; //root server ip and port
     char tcpsessions[63]; //tcp session to provide
     char bestpops[63]; //number of access points to keep
     char tsecs[63]; //root update time
@@ -42,6 +42,7 @@ struct input{
 struct message{
     char command[32];
     char args[2][64];
+    struct ipport address;
 };
 
 //inputHandler.c

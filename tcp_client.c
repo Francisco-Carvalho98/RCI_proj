@@ -19,10 +19,10 @@ int tcp_client (int key){
     hints.ai_socktype=SOCK_STREAM;//TCP socket
     hints.ai_flags=AI_NUMERICSERV;
     
-    if (key == 0){
+    if (key == 0){//when root
         n=getaddrinfo(input.stream_id.ip,input.stream_id.port,&hints,&res);
         if(n!=0){perror("getaddrinfo()");exit(1);}
-    }else{
+    }else{//when not root
         n=getaddrinfo(input.ipaddr,input.uport,&hints,&res);
         if(n!=0){perror("getaddrinfo()");exit(1);}}
 
