@@ -20,14 +20,14 @@ void inputHandler (char **argv, int argc){
     strcpy(input.tcpsessions,"1");
     strcpy(input.bestpops,"1");
     strcpy(input.tsecs,"5");
-    input.display = on;
-    input.advanced = off;
-    input.help = off;
+    input.display = true;
+    input.advanced = false;
+    input.help = false;
 
     if (argc == 1) {
         display_help();
         strcpy(buffer, "DUMP\n");
-        udp_client(0, buffer);
+        udp_client(0, buffer, input.rs_id);
         exit(0);}
 
     // LOOKS FOR FLAGS
@@ -43,13 +43,13 @@ void inputHandler (char **argv, int argc){
         if (strcmp(argv[i],"-p") == 0) strcpy(input.tcpsessions,argv[i+1]);
         if (strcmp(argv[i],"-n") == 0) strcpy(input.bestpops,argv[i+1]);
         if (strcmp(argv[i],"-x") == 0) strcpy(input.tsecs,argv[i+1]);
-        if (strcmp(argv[i],"-b") == 0) input.display = off;
-        if (strcmp(argv[i],"-d") == 0) input.advanced = on;
-        if (strcmp(argv[i],"-h") == 0) input.help = on;
+        if (strcmp(argv[i],"-b") == 0) input.display = false;
+        if (strcmp(argv[i],"-d") == 0) input.advanced = true;
+        if (strcmp(argv[i],"-h") == 0) input.help = true;
     } 
 
 
-    if (input.help == on){display_help(); exit(0);}
+    if (input.help == true){display_help(); exit(0);}
     if (strcmp(input.ipaddr, "\n") == 0){printf("Must specify application IP\n");display_help();exit(0);}
 
     // STREAM NAME

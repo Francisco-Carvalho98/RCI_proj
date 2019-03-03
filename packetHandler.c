@@ -20,14 +20,25 @@ void udp_encoder (char *command, char *message){//WHOISROOT, REMOVE, DUMP, POPRE
 
 void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STREAMS, ERROR, POPRESP
 
+    char *token;
     //catches a ROOTIS
     if (sscanf(message, "%s %s %s", decoded->command, decoded->args[0], decoded->args[1]) == 3){
-        //TODO build message.address
+        //splits address into ip and port
+        token = strtok(decoded->args[1],":");
+        strcpy(decoded->address.adress,token);
+        token = strtok(NULL," ");
+        strcpy(decoded->address.port,token);
         return;}
 
     //catches a URROOT, POPRESP
     if (sscanf(message, "%s %s", decoded->command, decoded->args[0]) == 2){
-        //TODO build message.address
+        //splits address into ip and port
+        token = strtok(decoded->args[0],":");//neglets stream name
+        token = strtok(NULL,":");
+        strcpy(decoded->address.adress,token);
+        token = strtok(NULL," ");
+        strcpy(decoded->address.port,token);
+        printf("decoded: %s %s\n", decoded->address.adress, decoded->address.port);
         return;}
     
     //TODO process STREAMS, ERROR

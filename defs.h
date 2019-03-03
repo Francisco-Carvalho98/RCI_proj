@@ -12,7 +12,7 @@
 #include <signal.h>
 #include <sys/select.h>
 
-enum flag {off, on};
+enum flag {false, true};
 
 struct stream{
     char name[63];
@@ -49,11 +49,13 @@ struct message{
 void inputHandler (char **, int);
 void display_help ();
 
-//udp_client.c
-void udp_client(int, char *);
+//udp.c
+void udp_client(int, char *, struct ipport);
+int udp_server ();
 
-//tcp_client.c
-int tcp_client(int);
+//tcp.c
+int tcp_client(int, struct ipport);
+int tcp_server ();
 
 //packetHandler.c
 void udp_encoder (char *, char *);
