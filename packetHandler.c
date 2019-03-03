@@ -2,7 +2,7 @@
 
 extern struct input input;
 
-void udp_encoder (char *command, char *message){
+void udp_encoder (char *command, char *message){//WHOISROOT, REMOVE, DUMP, POPREQ
     //builds WHOISROOT message
     if (strcmp(command, "WHOISROOT") == 0){
         sprintf(message, "WHOISROOT %s:%s:%s %s:%s\n", input.stream_id.name
@@ -18,12 +18,14 @@ void udp_encoder (char *command, char *message){
     return;
 }
 
-void udp_decoder (char *message, struct message *decoded){
+void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STREAMS, ERROR, POPRESP
 
     //catches a ROOTIS
     if (sscanf(message, "%s %s %s", decoded->command, decoded->args[0], decoded->args[1]) == 3) return;
 
-    //catches a URROOT
+    //catches a URROOT, POPRESP
     if (sscanf(message, "%s %s", decoded->command, decoded->args[0]) == 2) return;
-        
+    
+    //TODO process STREAMS, ERROR
+    return;
 }

@@ -12,6 +12,7 @@ void inputHandler (char **argv, int argc){
     char buffer[64];
 
     // DEFAULT DONE
+    strcpy(input.ipaddr, "\n");
     strcpy(input.tport,"58000");
     strcpy(input.uport,"58000");
     strcpy(input.rs_id.adress,"193.136.138.142");
@@ -49,6 +50,7 @@ void inputHandler (char **argv, int argc){
 
 
     if (input.help == on){display_help(); exit(0);}
+    if (strcmp(input.ipaddr, "\n") == 0){printf("Must specify application IP\n");display_help();exit(0);}
 
     // STREAM NAME
     token = strtok(argv[1],":");
