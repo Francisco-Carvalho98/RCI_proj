@@ -1,4 +1,4 @@
-CFLAGS= -Wall
+CFLAGS= -Wall -g
 
 iamroot: proj.o inputHandler.o udp.o packetHandler.o tcp.o
 	gcc -o iamroot proj.o inputHandler.o udp.o packetHandler.o tcp.o $(CFLAGS)

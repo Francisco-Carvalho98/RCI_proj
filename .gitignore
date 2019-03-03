@@ -4,3 +4,4 @@ inputHandler.o
 packetHandler.o
 tcp.o
 udp.o
+.vscode

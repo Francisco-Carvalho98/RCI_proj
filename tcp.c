@@ -49,7 +49,6 @@ int tcp_server (){
     if(n!=0)/*error*/exit(1);
     
     if((fd=socket(res->ai_family,res->ai_socktype,res->ai_protocol))==-1)/*error*/exit(1);
-    printf("fd: %d\n", fd);
     
     if(bind(fd,res->ai_addr,res->ai_addrlen)==-1)/*error*/exit(1);
     if(listen(fd,5)==-1)/*error*/exit(1);

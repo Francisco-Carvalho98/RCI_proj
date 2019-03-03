@@ -8,20 +8,26 @@ int main (int argc, char **argv)
     //system("clear");
     char buffer[80];
     struct message message; 
-    int ctcp_fd, sudp_fd; //tcp client socket
+    int ctcp_fd, sudp_fd, stcp_fd; //tcp client socket
 
     inputHandler(argv, argc);
     udp_encoder("WHOISROOT", buffer); //builds WHOISROOT protocol message
     udp_client(0, buffer, input.rs_id); //sends the built message
     udp_decoder(buffer, &message); //decodes received message
     
-    if (strcmp(message.command, "URROOT") == 0){//node is root
-        ctcp_fd = tcp_client(0, message.address); //connects to stream source
-        printf("Connected to stream source on socket: %d\n", ctcp_fd);
-        sudp_fd = udp_server();
-        printf("udp access server created on socket %d\n", sudp_fd);
-        //initialize tcp stream server
-    }else if (strcmp(message.command, "ROOTIS") == 0){//node isnt root
+    if (strcmp(message.command, "URROOT") == 0){//APLICATION IS ROOT
+
+        //connects to stream source
+        ctcp_fd = tcp_client(0, message.address);printf("Connected to stream source on socket: %d\n", ctcp_fd);
+
+        //initializes udp access server
+        sudp_fd = udp_server();printf("udp access server created on socket %d\n", sudp_fd);
+
+        //initializes tcp downlink server
+        stcp_fd = tcp_server();printf("tcp downlink server created on socket %d\n", stcp_fd);
+
+
+    }else if (strcmp(message.command, "ROOTIS") == 0){//APLICATION IS NOT ROOT
         strcpy(buffer, "POPREQ\n");//build message
         printf("Sending: %s to %s:%s\n",buffer, message.address.adress, message.address.port);
         udp_client(0, buffer, message.address);//send it
@@ -33,6 +39,7 @@ int main (int argc, char **argv)
     fd_set rfds;
     int counter, n, addrlen;
     struct sockaddr_in addr;
+
     while(1){
         FD_ZERO(&rfds);
         FD_SET(ctcp_fd,&rfds);
