@@ -15,7 +15,7 @@ void inputHandler (char **argv, int argc){
     strcpy(input.ipaddr, "\n");
     strcpy(input.tport,"58000");
     strcpy(input.uport,"58000");
-    strcpy(input.rs_id.adress,"193.136.138.142");
+    strcpy(input.rs_id.ip,"193.136.138.142");
     strcpy(input.rs_id.port,"59000");
     strcpy(input.tcpsessions,"1");
     strcpy(input.bestpops,"1");
@@ -37,7 +37,7 @@ void inputHandler (char **argv, int argc){
         if (strcmp(argv[i],"-u") == 0) strcpy(input.uport,argv[i+1]); 
         if (strcmp(argv[i],"-s") == 0){
             token = strtok(argv[i+1],":");
-            strcpy(input.rs_id.adress,token);
+            strcpy(input.rs_id.ip,token);
             token = strtok(NULL," ");
             strcpy(input.rs_id.port,token);}
         if (strcmp(argv[i],"-p") == 0) strcpy(input.tcpsessions,argv[i+1]);
@@ -79,7 +79,7 @@ void display_help (){
 void print_input(){
     printf("StreamID: %s:%s:%s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
     printf("Self IP, TCP and UDP ports: %s - %s - %s\n", input.ipaddr, input.tport, input.uport);
-    printf("Root Server: %s:%s\n", input.rs_id.adress, input.rs_id.port);
+    printf("Root Server: %s:%s\n", input.rs_id.ip, input.rs_id.port);
     printf("Application variables: %s (sessions) - %s (bestp) - %s (tsecs)\n", input.tcpsessions, input.bestpops, input.tsecs);
     printf("Flags: %d %d %d\n", input.display, input.advanced, input.help);
     return;

@@ -21,7 +21,7 @@ struct stream{
 };
 
 struct ipport{
-    char adress[63];
+    char ip[63];
     char port[63];
 };
  
@@ -54,7 +54,7 @@ void udp_client(int, char *, struct ipport);
 int udp_server ();
 
 //tcp.c
-int tcp_client(int, struct ipport);
+int tcp_client(struct ipport);
 int tcp_server ();
 
 //packetHandler.c

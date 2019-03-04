@@ -17,7 +17,7 @@ void udp_client (int key, char *message, struct ipport ipport){
 
 
     
-    n=getaddrinfo(ipport.adress,ipport.port,&hints,&res);
+    n=getaddrinfo(ipport.ip,ipport.port,&hints,&res);
     if(n!=0){perror("udp_client getaddrinfo()");exit(1);}
     
     fd=socket(res->ai_family,res->ai_socktype,res->ai_protocol);

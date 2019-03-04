@@ -25,7 +25,7 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
     if (sscanf(message, "%s %s %s", decoded->command, decoded->args[0], decoded->args[1]) == 3){
         //splits address into ip and port
         token = strtok(decoded->args[1],":");
-        strcpy(decoded->address.adress,token);
+        strcpy(decoded->address.ip,token);
         token = strtok(NULL," ");
         strcpy(decoded->address.port,token);
         return;}
@@ -35,10 +35,10 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
         //splits address into ip and port
         token = strtok(decoded->args[0],":");//neglets stream name
         token = strtok(NULL,":");
-        strcpy(decoded->address.adress,token);
+        strcpy(decoded->address.ip,token);
         token = strtok(NULL," ");
         strcpy(decoded->address.port,token);
-        printf("decoded: %s %s\n", decoded->address.adress, decoded->address.port);
+        printf("decoded: %s %s\n", decoded->address.ip, decoded->address.port);
         return;}
     
     //TODO process STREAMS, ERROR
