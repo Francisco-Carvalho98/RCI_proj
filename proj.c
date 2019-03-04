@@ -35,7 +35,8 @@ int main (int argc, char **argv)
         //send it
         udp_client(0, buffer, message.address);
         //decode POPRESP received message
-        udp_decoder(buffer, &message); printf("Message decoded: %s %s\n", message.address.ip, message.address.ip);//exit(0);
+        printf("bruh.%s\n", buffer);
+        udp_decoder(buffer, &message); printf("Message decoded: %s %s\n", message.address.ip, message.address.port);//exit(0);
         //connects to tree entry point
         ctcp_fd = tcp_client(message.address); printf("Connected to tree entry point\n");
         stcp_fd = tcp_server(); printf("tcp node downlink server created on socket %d\n", stcp_fd);
@@ -44,7 +45,7 @@ int main (int argc, char **argv)
     }else exit(EXIT_FAILURE);
 
     fd_set rfds;
-    int counter, n, addrlen;
+    int counter, n, addrlen, newfd=-1;
     struct sockaddr_in addr;
 
     while(1){
@@ -52,22 +53,41 @@ int main (int argc, char **argv)
         FD_SET(ctcp_fd,&rfds);
         FD_SET(sudp_fd,&rfds);
         FD_SET(stcp_fd, &rfds);
+        FD_SET(newfd, &rfds);
         FD_SET(STDERR_FILENO,&rfds);
 
-        counter=select(6,&rfds,(fd_set*)NULL,(fd_set*)NULL,(struct timeval *)NULL);
+        counter=select(7,&rfds,(fd_set*)NULL,(fd_set*)NULL,(struct timeval *)NULL);
         if(counter<=0){perror("select()"); exit(1);}
 
-        //checks for source stream
+        //checks for source stream packets
         if(FD_ISSET(ctcp_fd,&rfds)){
             if((n=read(ctcp_fd,buffer,78))!=0){
                 if(n==-1){ perror("read()");exit(1);}
                 if(is_root)printf("Detected traffic from stream source\n");
-                else printf("Detected traffic from uplink connection\n");
-                /*write(1, "Server: ", strlen("Server: "));
-                write(1, buffer, n);printf("\n");*/}}
+                else{
+                    //printf("Detected traffic from uplink connection\n");
+                    write(1, "Redirected:\n", strlen("Redirected:\n"));
+                    write(1, buffer, n);
+                    printf("\n");
+                }
+                //sends stream downstream
+                
+                write(newfd, buffer, n);}}
         
+        //checks for downlink connection attempts
         if(FD_ISSET(stcp_fd, &rfds)){
-            
+            addrlen=sizeof(addr);
+            if((newfd=accept(stcp_fd,(struct sockaddr*)&addr,(unsigned int *)&addrlen))==-1){perror("accept()");exit(1);}
+            printf("Connection established on socket: %d\n", newfd);
+        }
+
+        //check for downlink connection packets
+        if (FD_ISSET(newfd, &rfds)){
+            if((n=read(newfd,buffer,128))!=0){
+                if(n==-1){perror("read()");exit(1);}/* ... */
+                //write buffer in afd
+                write(1, "echo: ", 6);
+                write(1, buffer, n);}
         }
 
         //checks for user input
