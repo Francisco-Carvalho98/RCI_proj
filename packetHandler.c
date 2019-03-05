@@ -1,7 +1,5 @@
 #include "defs.h"
 
-extern struct input input;
-
 void udp_encoder (char *command, char *message){//WHOISROOT, REMOVE, DUMP, POPREQ
     //builds WHOISROOT message
     if (strcmp(command, "WHOISROOT") == 0){

@@ -1,7 +1,5 @@
 #include "defs.h"
 
-extern struct input input;
-
 int tcp_client (struct ipport ipport){
 
     struct addrinfo hints,*res;

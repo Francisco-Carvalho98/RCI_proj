@@ -12,6 +12,8 @@
 #include <signal.h>
 #include <sys/select.h>
 
+struct input input;
+
 enum flag {false, true};
 
 struct stream{

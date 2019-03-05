@@ -4,8 +4,6 @@
 
 #include "defs.h"
 
-extern struct input input;
-
 void inputHandler (char **argv, int argc){
     
     char *token;

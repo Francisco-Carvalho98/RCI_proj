@@ -1,6 +1,6 @@
 #include "defs.h"
 
-struct input input;
+
 
 int main (int argc, char **argv)
 {
@@ -54,18 +54,18 @@ int main (int argc, char **argv)
         FD_SET(sudp_fd,&rfds);
         FD_SET(stcp_fd, &rfds);
         FD_SET(newfd, &rfds);
-        FD_SET(STDERR_FILENO,&rfds);
+        FD_SET(STDIN_FILENO,&rfds);
 
-        counter=select(7,&rfds,(fd_set*)NULL,(fd_set*)NULL,(struct timeval *)NULL);
+        counter=select(20,&rfds,(fd_set*)NULL,(fd_set*)NULL,(struct timeval *)NULL);
         if(counter<=0){perror("select()"); exit(1);}
 
-        //checks for source stream packets
+        //checks for uplink connection packets
         if(FD_ISSET(ctcp_fd,&rfds)){
             if((n=read(ctcp_fd,buffer,78))!=0){
                 if(n==-1){ perror("read()");exit(1);}
                 if(is_root)printf("Detected traffic from stream source\n");
                 else{
-                    //printf("Detected traffic from uplink connection\n");
+                    printf("Detected traffic from uplink connection\n");
                     write(1, "Redirected:\n", strlen("Redirected:\n"));
                     write(1, buffer, n);
                     printf("\n");
@@ -91,7 +91,7 @@ int main (int argc, char **argv)
         }
 
         //checks for user input
-        if(FD_ISSET(STDERR_FILENO,&rfds)){
+        if(FD_ISSET(STDIN_FILENO,&rfds)){
             fgets(buffer, 74, stdin);
             write(1, "User: ", 6);
             write(1, buffer, 74);}
