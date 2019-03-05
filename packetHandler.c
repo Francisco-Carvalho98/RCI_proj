@@ -6,7 +6,7 @@ void udp_encoder (char *command, char *message){//WHOISROOT, REMOVE, DUMP, POPRE
         sprintf(message, "WHOISROOT %s:%s:%s %s:%s\n", input.stream_id.name
                                                      , input.stream_id.ip
                                                      , input.stream_id.port, input.ipaddr
-                                                     , input.tport );}
+                                                     , input.uport );}
     //builds REMOVE message
     if (strcmp(command, "REMOVE") == 0){
         sprintf(message, "REMOVE %s:%s:%s\n", input.stream_id.name
