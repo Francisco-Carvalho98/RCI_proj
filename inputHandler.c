@@ -30,25 +30,25 @@ void inputHandler (char **argv, int argc){
 
     // LOOKS FOR FLAGS
     for (int i = 1; i < argc; i++){
-        if (strcmp(argv[i],"-i") == 0) strcpy(input.ipaddr,argv[i+1]);   
-        if (strcmp(argv[i],"-t") == 0) strcpy(input.tport,argv[i+1]); 
-        if (strcmp(argv[i],"-u") == 0) strcpy(input.uport,argv[i+1]); 
-        if (strcmp(argv[i],"-s") == 0){
-            token = strtok(argv[i+1],":");
+        if (strcasecmp(argv[i],"-i") == 0) strcpy(input.ipaddr,argv[++i]);   
+        if (strcasecmp(argv[i],"-t") == 0) strcpy(input.tport,argv[++i]); 
+        if (strcasecmp(argv[i],"-u") == 0) strcpy(input.uport,argv[++i]); 
+        if (strcasecmp(argv[i],"-s") == 0){
+            token = strtok(argv[++i],":");
             strcpy(input.rs_id.ip,token);
             token = strtok(NULL," ");
             strcpy(input.rs_id.port,token);}
-        if (strcmp(argv[i],"-p") == 0) strcpy(input.tcpsessions,argv[i+1]);
-        if (strcmp(argv[i],"-n") == 0) strcpy(input.bestpops,argv[i+1]);
-        if (strcmp(argv[i],"-x") == 0) strcpy(input.tsecs,argv[i+1]);
-        if (strcmp(argv[i],"-b") == 0) input.display = false;
-        if (strcmp(argv[i],"-d") == 0) input.advanced = true;
-        if (strcmp(argv[i],"-h") == 0) input.help = true;
+        if (strcasecmp(argv[i],"-p") == 0) strcpy(input.tcpsessions,argv[++i]);
+        if (strcasecmp(argv[i],"-n") == 0) strcpy(input.bestpops,argv[++i]);
+        if (strcasecmp(argv[i],"-x") == 0) strcpy(input.tsecs,argv[++i]);
+        if (strcasecmp(argv[i],"-b") == 0) input.display = false;
+        if (strcasecmp(argv[i],"-d") == 0) input.advanced = true;
+        if (strcasecmp(argv[i],"-h") == 0) input.help = true;
     } 
 
 
     if (input.help == true){display_help(); exit(0);}
-    if (strcmp(input.ipaddr, "\n") == 0){printf("Must specify application IP\n");display_help();exit(0);}
+    if (strcasecmp(input.ipaddr, "\n") == 0){printf("Must specify application IP\n");display_help();exit(0);}
 
     // STREAM NAME
     token = strtok(argv[1],":");

@@ -11,10 +11,27 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/select.h>
+#include <stdbool.h>
 
 struct input input;
 
-enum flag {false, true};
+struct udp_protocol{
+    bool test;
+};
+
+struct user_commands{
+    bool test;
+};
+
+struct ptp_protocol{
+    bool test;
+};
+
+struct application{
+    struct udp_protocol udp;
+    struct user_commands user;
+    struct ptp_protocol ptp;
+};
 
 struct stream{
     char name[63];
@@ -36,9 +53,9 @@ struct input{
     char tcpsessions[63]; //tcp session to provide
     char bestpops[63]; //number of access points to keep
     char tsecs[63]; //root update time
-    enum flag display; 
-    enum flag advanced;
-    enum flag help;
+    bool display; 
+    bool advanced;
+    bool help;
 };
 
 struct message{
@@ -50,6 +67,7 @@ struct message{
 //inputHandler.c
 void inputHandler (char **, int);
 void display_help ();
+void print_input();
 
 //udp.c
 void udp_client(int, char *, struct ipport);

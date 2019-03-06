@@ -9,9 +9,9 @@ int main (int argc, char **argv)
     char buffer[80];
     struct message message; 
     int ctcp_fd, sudp_fd, stcp_fd; //tcp client socket
-    enum flag is_root;
+    bool is_root;
 
-    inputHandler(argv, argc);
+    inputHandler(argv, argc);print_input();
     udp_encoder("WHOISROOT", buffer); //builds WHOISROOT protocol message
     udp_client(0, buffer, input.rs_id); //sends the built message
     udp_decoder(buffer, &message); //decodes received message
@@ -19,6 +19,8 @@ int main (int argc, char **argv)
     if (strcmp(message.command, "URROOT") == 0){is_root=true;//APLICATION IS ROOT
 
         //connects to stream source
+        printf("hmm - %s %s\n", message.address.ip, message.address.port);
+        
         ctcp_fd = tcp_client(message.address); //printf("Connected to stream source on socket: %d\n", ctcp_fd);
 
         //initializes udp access server

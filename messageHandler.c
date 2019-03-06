@@ -2,13 +2,13 @@
 
 void udp_encoder (char *command, char *message){//WHOISROOT, REMOVE, DUMP, POPREQ
     //builds WHOISROOT message
-    if (strcmp(command, "WHOISROOT") == 0){
+    if (strcasecmp(command, "WHOISROOT") == 0){
         sprintf(message, "WHOISROOT %s:%s:%s %s:%s\n", input.stream_id.name
                                                      , input.stream_id.ip
                                                      , input.stream_id.port, input.ipaddr
                                                      , input.uport );}
     //builds REMOVE message
-    if (strcmp(command, "REMOVE") == 0){
+    if (strcasecmp(command, "REMOVE") == 0){
         sprintf(message, "REMOVE %s:%s:%s\n", input.stream_id.name
                                             , input.stream_id.ip
                                             , input.stream_id.port);}
@@ -41,4 +41,11 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
     
     //TODO process STREAMS, ERROR
     return;
+}
+
+void user_decode (char * command){
+
+    sscanf(command, "%s %s", command, command);
+
+    
 }
