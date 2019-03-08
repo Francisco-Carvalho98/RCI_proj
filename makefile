@@ -1,10 +1,10 @@
 CFLAGS= -Wall -g
 
-iamroot: proj.o inputHandler.o udp.o messageHandler.o tcp.o
-	gcc -o iamroot proj.o inputHandler.o udp.o messageHandler.o tcp.o $(CFLAGS)
+iamroot: iamroot.o inputHandler.o udp.o messageHandler.o tcp.o
+	gcc -o iamroot iamroot.o inputHandler.o udp.o messageHandler.o tcp.o $(CFLAGS)
 
-proj.o: proj.c defs.h
-	gcc $(CFLAGS) -c proj.c 
+iamroot.o: iamroot.c defs.h
+	gcc $(CFLAGS) -c iamroot.c 
 
 inputHandler.o: inputHandler.c defs.h
 	gcc $(CFLAGS) -c inputHandler.c 

@@ -44,6 +44,7 @@ struct ipport{
     char port[63];
 };
  
+//saves input args
 struct input{
     struct stream stream_id; //stream data
     char ipaddr[63]; // self ip
@@ -62,6 +63,11 @@ struct message{
     char command[32];
     char args[2][64];
     struct ipport address; //used for tcp_client
+};
+
+struct access_point {
+    struct ipport ipport;
+    int key;
 };
 
 //inputHandler.c
