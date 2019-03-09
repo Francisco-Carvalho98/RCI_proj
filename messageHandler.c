@@ -1,6 +1,6 @@
 #include "defs.h"
 
-void udp_encoder (char *command, char *message){//WHOISROOT, REMOVE, DUMP, POPREQ
+void udp_encoder (char *command, char *message, struct ipport *ipport){//WHOISROOT, REMOVE, DUMP, POPREQ
     //builds WHOISROOT message
     if (strcasecmp(command, "WHOISROOT") == 0){
         sprintf(message, "WHOISROOT %s:%s:%s %s:%s\n", input.stream_id.name
@@ -12,6 +12,10 @@ void udp_encoder (char *command, char *message){//WHOISROOT, REMOVE, DUMP, POPRE
         sprintf(message, "REMOVE %s:%s:%s\n", input.stream_id.name
                                             , input.stream_id.ip
                                             , input.stream_id.port);}
+
+    if (!strcasecmp(command, "POPRESP")){
+        sprintf(message, "POPRESP %s:%s:%s\n", input.stream_id.name, ipport->ip, ipport->port);
+    }
 
     return;
 }
@@ -32,6 +36,7 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
     if (sscanf(message, "%s %s", decoded->command, decoded->args[0]) == 2){
         //splits address into ip and port
         token = strtok(decoded->args[0],":");//neglets stream name
+        printf("token - %s\n", token);
         token = strtok(NULL,":");
         strcpy(decoded->address.ip,token);
         token = strtok(NULL," ");

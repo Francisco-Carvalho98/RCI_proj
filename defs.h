@@ -13,8 +13,6 @@
 #include <sys/select.h>
 #include <stdbool.h>
 
-struct input input;
-
 struct udp_protocol{
     bool test;
 };
@@ -84,8 +82,12 @@ int tcp_client(struct ipport);
 int tcp_server ();
 
 //packetHandler.c
-void udp_encoder (char *, char *);
+void udp_encoder (char *, char *, struct ipport *);
 void udp_decoder (char *, struct message *);
 
+
+//global vars declaration
+struct access_point pop[10];
+struct input input;
 
 #endif

@@ -7,12 +7,13 @@ int main (int argc, char **argv)
 
     //system("clear");
     char buffer[80];
+    memset(&pop, 0, sizeof pop);
     struct message message; 
     int ctcp_fd, sudp_fd, stcp_fd; //tcp client socket
     bool is_root;
 
     inputHandler(argv, argc);print_input();
-    udp_encoder("WHOISROOT", buffer); //builds WHOISROOT protocol message
+    udp_encoder("WHOISROOT", buffer, (struct ipport *)NULL); //builds WHOISROOT protocol message
     udp_client(0, buffer, input.rs_id); //sends the built message
     udp_decoder(buffer, &message); //decodes received message
     
@@ -27,15 +28,23 @@ int main (int argc, char **argv)
         //initializes tcp downlink server
         stcp_fd = tcp_server(); //printf("tcp root downlink server created on socket %d\n", stcp_fd);
 
+        strcpy(pop[0].ipport.ip, input.ipaddr);
+        strcpy(pop[0].ipport.port, input.tport);
+
+
     }else if (strcmp(message.command, "ROOTIS") == 0){is_root=false;//APLICATION IS NOT ROOT
 
         //build POPREQ message
+        memset(buffer, '\0', strlen(buffer));
         strcpy(buffer, "POPREQ\n"); //printf("Sending: %s to %s:%s\n",buffer, message.address.adress, message.address.port);
+
         //send it
         udp_client(0, buffer, message.address);
+
+        //memset(&message, '\0', sizeof message);
         //decode POPRESP received message
-        printf("bruh.%s\n", buffer);
         udp_decoder(buffer, &message); printf("Message decoded: %s %s\n", message.address.ip, message.address.port);//exit(0);
+        
         //connects to tree entry point
         ctcp_fd = tcp_client(message.address); printf("Connected to tree entry point\n");
         stcp_fd = tcp_server(); printf("tcp node downlink server created on socket %d\n", stcp_fd);
@@ -46,6 +55,8 @@ int main (int argc, char **argv)
     fd_set rfds;
     int counter, n, addrlen, newfd=-1;
     struct sockaddr_in addr;
+    struct timeval timeout;
+    
 
     while(1){
         FD_ZERO(&rfds);
@@ -54,8 +65,13 @@ int main (int argc, char **argv)
         FD_SET(stcp_fd, &rfds);
         FD_SET(newfd, &rfds);
         FD_SET(STDIN_FILENO,&rfds);
+        timeout.tv_sec = atoi(input.tsecs);
+        printf("timeout: %ld\n", timeout.tv_sec);
+        timeout.tv_usec = 0;
+        memset(buffer, '\0', strlen(buffer));
+        memset(&message, '\0', sizeof message);
 
-        counter=select(20,&rfds,(fd_set*)NULL,(fd_set*)NULL,(struct timeval *)NULL);
+        counter=select(20,&rfds,(fd_set*)NULL,(fd_set*)NULL, &timeout);
         if(counter<=0){perror("select()"); exit(1);}
 
         //checks for uplink connection packets
@@ -97,14 +113,26 @@ int main (int argc, char **argv)
 
         //check for udp access server requests
         if(FD_ISSET(sudp_fd,&rfds)){
+
             printf("Detected traffic to upd access server\n");
             addrlen=sizeof(addr);
             n=recvfrom(sudp_fd,buffer,128,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen);
             if(n==-1)/*error*/exit(1);
-            
-            n=sendto(sudp_fd,buffer,n,0,(struct sockaddr*)&addr,addrlen);
+
+            udp_decoder(buffer, &message);
+            memset(buffer, '\0', strlen(buffer));
+            if (!strcasecmp("POPREQ", message.command)){ 
+                printf("POPREQ detected\n");
+                udp_encoder("POPRESP", buffer, &(pop[0].ipport));
+            }
+
+            n=sendto(sudp_fd,buffer,strlen(buffer),0,(struct sockaddr*)&addr,addrlen);
             if(n==-1)/*error*/exit(1);
         }
+
+        /*memset(buffer, '\0', strlen(buffer));
+        udp_encoder("WHOISROOT", buffer, (struct ipport *)NULL); //builds WHOISROOT protocol message
+        udp_client(0, buffer, input.rs_id); //sends the built message*/
     }
     return 0;
 }

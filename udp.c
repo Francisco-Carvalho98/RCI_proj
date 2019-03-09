@@ -12,8 +12,6 @@ void udp_client (int key, char *message, struct ipport ipport){
     hints.ai_family=AF_INET;//IPv4
     hints.ai_socktype=SOCK_DGRAM;
     hints.ai_flags=AI_CANONNAME;
-
-
     
     n=getaddrinfo(ipport.ip,ipport.port,&hints,&res);
     if(n!=0){perror("udp_client getaddrinfo()");exit(1);}
