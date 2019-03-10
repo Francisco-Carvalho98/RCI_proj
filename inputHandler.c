@@ -7,7 +7,8 @@
 void inputHandler (char **argv, int argc){
     
     char *token;
-    char buffer[64];
+    char buffer[BUFFER_SIZE];
+    struct message message;
 
     // DEFAULT DONE
     strcpy(input.ipaddr, "\n");
@@ -26,6 +27,7 @@ void inputHandler (char **argv, int argc){
         display_help();
         strcpy(buffer, "DUMP\n");
         udp_client(0, buffer, input.rs_id);
+        udp_decoder(buffer, &message);
         exit(0);}
 
     // LOOKS FOR FLAGS

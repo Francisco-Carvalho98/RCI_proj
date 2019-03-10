@@ -14,6 +14,8 @@
 #include <stdbool.h>
 #include <time.h>
 
+#define BUFFER_SIZE 256 
+
 struct udp_protocol{
     bool ROOTIS;
     bool URROOT;

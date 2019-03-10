@@ -22,14 +22,19 @@ void udp_encoder (char *command, char *message, struct ipport *ipport){//WHOISRO
     return;
 }
 
-void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STREAMS, ERROR, POPRESP
+void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STREAMS, ERROR, POPRESP, POPREQ
 
     char *token;
-    //catches a ROOTIS, POPRESP
+    //catches a ROOTIS, POPRESP and non empty STREAM
     if (sscanf(message, "%s %s %s", decoded->command, decoded->args[0], decoded->args[1]) == 3){
-        
         if (!strcasecmp(decoded->command, "ROOTIS")) node.udp.ROOTIS = true;
         else if (!strcasecmp(decoded->command, "POPRESP")) node.udp.POPRESP = true;
+        else if (!strcasecmp(decoded->command, "STREAMS")){
+            message += 8;//skips STREAMS\n
+            printf("Streams:\n");
+            printf("%s", message);
+            return;
+        }
         else{printf("Unexpected error - udp\n");exit(EXIT_FAILURE);}
 
         //splits address into ip and port
@@ -41,7 +46,6 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
 
     //catches a URROOT, ERROR
     if (sscanf(message, "%s %s", decoded->command, decoded->args[0]) == 2){
-        printf("%s\n", decoded->command);
         if (!strcasecmp(decoded->command, "URROOT")) node.udp.URROOT = true;
         else if (!strcasecmp(decoded->command, "ERROR")) node.udp.ERROR = true;
         else {printf("Unexpected error - udp\n");exit(EXIT_FAILURE);}
@@ -56,8 +60,10 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
         return;}
     
     //catches a POPREQ
-    if (!strcasecmp(decoded->command, "POPREQ")) node.udp.POPREQ = true;
-    //TODO process STREAM
+    if (!strcasecmp(decoded->command, "POPREQ")){node.udp.POPREQ = true;return;}
+
+    //catches empty stream
+    printf("Streams:\nNo streams running\n");
     return;
 }
 

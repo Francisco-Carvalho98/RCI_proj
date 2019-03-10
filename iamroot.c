@@ -4,7 +4,7 @@
 
 int main (int argc, char **argv)
 {
-    char buffer[80];
+    char buffer[BUFFER_SIZE];
     memset(&pop, 0, sizeof pop);
     struct message message; 
     int ctcp_fd, sudp_fd, stcp_fd; //tcp client socket
@@ -85,13 +85,12 @@ int main (int argc, char **argv)
 
         //checks for uplink connection packets ------ TCP 
         if(FD_ISSET(ctcp_fd,&rfds) ){
-            if((n=read(ctcp_fd,buffer,128))!=0){
+            if((n=read(ctcp_fd,buffer,BUFFER_SIZE))!=0){
                 if(n==-1){ perror("read()");exit(1);}
                 if(is_root){printf("Detected traffic from stream source\n");
                     tcp_encoder("DA", buffer, n);
                 }else{
                     printf("Detected traffic from uplink connection\n");
-                    write(1, "Redirected:\n", strlen("Redirected:\n"));
                     write(1, buffer, n);
                     printf("\n");
                 }
@@ -113,7 +112,7 @@ int main (int argc, char **argv)
         //check for downlink connection packets ----- TCP
         for (int i = 0; i < input.tcpsessions; i++)
             if (FD_ISSET(new_fds[i], &rfds) ){
-                if((n=read(newfd,buffer,128))!=0){
+                if((n=read(newfd,buffer,BUFFER_SIZE))!=0){
                     if(n==-1){perror("read()");exit(1);}/* ... */
                     //write buffer in afd
                     write(1, "echo: ", 6);
@@ -131,7 +130,7 @@ int main (int argc, char **argv)
 
             printf("Detected traffic to upd access server\n");
             addrlen=sizeof(addr);
-            n=recvfrom(sudp_fd,buffer,128,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen);
+            n=recvfrom(sudp_fd,buffer,BUFFER_SIZE,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen);
             if(n==-1)/*error*/exit(1);
 
             udp_decoder(buffer, &message);

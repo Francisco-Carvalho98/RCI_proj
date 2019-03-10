@@ -5,8 +5,8 @@ void udp_client (int key, char *message, struct ipport ipport){
     struct addrinfo hints,*res;
     int fd,n, addrlen;
     struct sockaddr_in addr;
-    int errcode;
-    char host[NI_MAXHOST],service[NI_MAXSERV];//consts in <netdb.h>
+    //int errcode;
+    //char host[NI_MAXHOST],service[NI_MAXSERV];//consts in <netdb.h>
     
     memset(&hints,0,sizeof hints);
     hints.ai_family=AF_INET;//IPv4
@@ -36,9 +36,9 @@ void udp_client (int key, char *message, struct ipport ipport){
         printf("Message received:\n");
         write(1,message,n);
     
-        if((errcode=getnameinfo((struct sockaddr *)&addr,addrlen,host,sizeof host,service,sizeof service,0))!=0)
+        /*if((errcode=getnameinfo((struct sockaddr *)&addr,addrlen,host,sizeof host,service,sizeof service,0))!=0)
             fprintf(stderr,"error: getnameinfo: %s\n",gai_strerror(errcode));
-        else printf("sent by [%s:%s]\n",host,service);
+        else printf("sent by [%s:%s]\n",host,service);*/
     }
     sleep(1);
     close(fd);
