@@ -4,20 +4,19 @@
 
 int main (int argc, char **argv)
 {
-
-    //system("clear");
     char buffer[80];
     memset(&pop, 0, sizeof pop);
     struct message message; 
     int ctcp_fd, sudp_fd, stcp_fd; //tcp client socket
-    bool is_root;
+    bool is_root, is_busy;
+    //memset(&node, false, sizeof node);
 
-    inputHandler(argv, argc);print_input();
+    inputHandler(argv, argc);//print_input();
     udp_encoder("WHOISROOT", buffer, (struct ipport *)NULL); //builds WHOISROOT protocol message
     udp_client(0, buffer, input.rs_id); //sends the built message
     udp_decoder(buffer, &message); //decodes received message
     
-    if (strcmp(message.command, "URROOT") == 0){is_root=true;//APLICATION IS ROOT
+    if (node.udp.URROOT){node.udp.ROOTIS = false;is_root=true;//APLICATION IS ROOT
 
         //connects to stream source
         ctcp_fd = tcp_client(message.address); //printf("Connected to stream source on socket: %d\n", ctcp_fd);
@@ -32,7 +31,7 @@ int main (int argc, char **argv)
         strcpy(pop[0].ipport.port, input.tport);
 
 
-    }else if (strcmp(message.command, "ROOTIS") == 0){is_root=false;//APLICATION IS NOT ROOT
+    }else if (node.udp.ROOTIS){node.udp.ROOTIS = false;is_root=false;//APLICATION IS NOT ROOT
 
         //build POPREQ message
         memset(buffer, '\0', strlen(buffer));
@@ -50,12 +49,13 @@ int main (int argc, char **argv)
         stcp_fd = tcp_server(); printf("tcp node downlink server created on socket %d\n", stcp_fd);
         sudp_fd = -1;
 
-    }else exit(EXIT_FAILURE);
+    }else{printf("Unexpected error - iamroot\n");exit(EXIT_FAILURE);}
 
     fd_set rfds;
     int counter, n, addrlen, newfd=-1;
     struct sockaddr_in addr;
-    struct timeval timeout;
+    //struct timeval timeout;
+    //time_t start = clock();
     
 
     while(1){
@@ -65,16 +65,13 @@ int main (int argc, char **argv)
         FD_SET(stcp_fd, &rfds);
         FD_SET(newfd, &rfds);
         FD_SET(STDIN_FILENO,&rfds);
-        timeout.tv_sec = atoi(input.tsecs);
-        printf("timeout: %ld\n", timeout.tv_sec);
-        timeout.tv_usec = 0;
         memset(buffer, '\0', strlen(buffer));
         memset(&message, '\0', sizeof message);
 
-        counter=select(20,&rfds,(fd_set*)NULL,(fd_set*)NULL, &timeout);
+        counter=select(20,&rfds,(fd_set*)NULL,(fd_set*)NULL, (struct timeval *)NULL);
         if(counter<=0){perror("select()"); exit(1);}
 
-        //checks for uplink connection packets
+        //checks for uplink connection packets ------ TCP
         if(FD_ISSET(ctcp_fd,&rfds)){
             if((n=read(ctcp_fd,buffer,78))!=0){
                 if(n==-1){ perror("read()");exit(1);}
@@ -89,14 +86,14 @@ int main (int argc, char **argv)
                 
                 write(newfd, buffer, n);}}
         
-        //checks for downlink connection attempts
+        //checks for downlink connection attempts ------- TCP
         if(FD_ISSET(stcp_fd, &rfds)){
             addrlen=sizeof(addr);
             if((newfd=accept(stcp_fd,(struct sockaddr*)&addr,(unsigned int *)&addrlen))==-1){perror("accept()");exit(1);}
             printf("Connection established on socket: %d\n", newfd);
         }
 
-        //check for downlink connection packets
+        //check for downlink connection packets ----- TCP
         if (FD_ISSET(newfd, &rfds)){
             if((n=read(newfd,buffer,128))!=0){
                 if(n==-1){perror("read()");exit(1);}/* ... */
@@ -105,13 +102,13 @@ int main (int argc, char **argv)
                 write(1, buffer, n);}
         }
 
-        //checks for user input
+        //checks for user input ---- STDIN
         if(FD_ISSET(STDIN_FILENO,&rfds)){
             fgets(buffer, 74, stdin);
             write(1, "User: ", 6);
             write(1, buffer, 74);}
 
-        //check for udp access server requests
+        //check for udp access server requests -------- UDP
         if(FD_ISSET(sudp_fd,&rfds)){
 
             printf("Detected traffic to upd access server\n");
@@ -121,7 +118,7 @@ int main (int argc, char **argv)
 
             udp_decoder(buffer, &message);
             memset(buffer, '\0', strlen(buffer));
-            if (!strcasecmp("POPREQ", message.command)){ 
+            if (node.udp.POPREQ){node.udp.POPREQ = false; 
                 printf("POPREQ detected\n");
                 udp_encoder("POPRESP", buffer, &(pop[0].ipport));
             }
@@ -130,10 +127,12 @@ int main (int argc, char **argv)
             if(n==-1)/*error*/exit(1);
         }
 
+        /*printf("elapsed - %ld\n", clock()-start);
+        printf("const - %ld\n", CLOCKS_PER_SEC);
+        if ((clock()-start)/CLOCKS_PER_SEC >= 5) printf("5 minutes elapsed\n");*/
         /*memset(buffer, '\0', strlen(buffer));
         udp_encoder("WHOISROOT", buffer, (struct ipport *)NULL); //builds WHOISROOT protocol message
         udp_client(0, buffer, input.rs_id); //sends the built message*/
     }
     return 0;
 }
-

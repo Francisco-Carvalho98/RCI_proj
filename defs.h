@@ -12,17 +12,41 @@
 #include <signal.h>
 #include <sys/select.h>
 #include <stdbool.h>
+#include <time.h>
 
 struct udp_protocol{
-    bool test;
+    bool ROOTIS;
+    bool URROOT;
+    bool WHOISROOT;
+    bool REMOVE;
+    bool DUMP;
+    bool STREAMS;
+    bool ERROR;
+    bool POPRESP;
+    bool POPREQ;
 };
 
 struct user_commands{
-    bool test;
+    bool streams;
+    bool status;
+    bool display;
+    bool format;
+    bool debug;
+    bool tree;
+    bool exit_;
 };
 
 struct ptp_protocol{
-    bool test;
+    bool WE;
+    bool NP;
+    bool RE;
+    bool SF;
+    bool BS;
+    bool DA;
+    bool PQ;
+    bool PR;
+    bool TQ;
+    bool TR;
 };
 
 struct application{
@@ -68,6 +92,9 @@ struct access_point {
     int key;
 };
 
+//iamroot.c
+void protect_sigpipe();
+
 //inputHandler.c
 void inputHandler (char **, int);
 void display_help ();
@@ -89,5 +116,6 @@ void udp_decoder (char *, struct message *);
 //global vars declaration
 struct access_point pop[10];
 struct input input;
+struct application node;
 
 #endif
