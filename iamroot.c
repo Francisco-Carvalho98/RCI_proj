@@ -31,6 +31,7 @@ int main (int argc, char **argv)
         //initializes tcp downlink server
         stcp_fd = tcp_server(); //printf("tcp root downlink server created on socket %d\n", stcp_fd);
 
+        //adds point of presence to pop array
         strcpy(pop[0].ipport.ip, input.ipaddr);
         strcpy(pop[0].ipport.port, input.tport);
 
@@ -58,6 +59,7 @@ int main (int argc, char **argv)
     fd_set rfds;
     int counter, n, addrlen, newfd=-1, maxfd;
     struct sockaddr_in addr;
+    int clients = 0;
     //struct timeval timeout;
     //time_t start = clock();
     
@@ -82,21 +84,27 @@ int main (int argc, char **argv)
         counter=select(maxfd+1,&rfds,(fd_set*)NULL,(fd_set*)NULL, (struct timeval *)NULL);
         if(counter<=0){perror("select()"); exit(1);}
 
+        /*
+        *
+        * START OF THE READ SET CHECKS
+        * 
+        */
+
         //checks for uplink connection packets ------ TCP 
         if(FD_ISSET(ctcp_fd,&rfds) ){
             if((n=read(ctcp_fd,buffer,BUFFER_SIZE))!=0){
+                printf("buffer of size %d-%s\n", n, buffer);
                 if(n==-1){ perror("read()");exit(1);}
                 if(is_root){printf("Detected traffic from stream source\n");
                     tcp_encoder("DA", buffer, n);
                 }else{
                     printf("Detected traffic from uplink connection\n");
-                    write(1, buffer, n);
-                    printf("\n");
+                    printf("%s\n", buffer);
                 }
                 //sends stream downstream
                 for (int i = 0; i < input.tcpsessions; i++)
                     if (new_fds[i] != -1)
-                        if (write(new_fds[i], buffer, n) == -1){
+                        if (write(new_fds[i], buffer, BUFFER_SIZE) == -1){
                             close(new_fds[i]); 
                             Array_Rem(new_fds, input.tcpsessions, new_fds[i]);}}}
         
@@ -104,8 +112,11 @@ int main (int argc, char **argv)
         if(FD_ISSET(stcp_fd, &rfds) ){
             addrlen=sizeof(addr);
             if((newfd=accept(stcp_fd,(struct sockaddr*)&addr,(unsigned int *)&addrlen))==-1){perror("accept()");exit(1);}
-            Array_Add(new_fds, input.tcpsessions, newfd);
-            printf("Connection established on socket: %d\n", newfd);
+            
+            if (clients < input.tcpsessions){
+                node.ptp.WE = true;
+                clients++;}
+            else node.ptp.RE = true;     
         }
 
         //check for downlink connection packets ----- TCP
@@ -142,7 +153,24 @@ int main (int argc, char **argv)
             n=sendto(sudp_fd,buffer,strlen(buffer),0,(struct sockaddr*)&addr,addrlen);
             if(n==-1)/*error*/exit(1);
         }
+        /*
+        *
+        * END OF THE READ SET CHECKS
+        * 
+        */
 
+        /*
+        *
+        * START OF FLAG CHECKING
+        * 
+        */ 
+
+        //PTP related flags handling
+        if (node.ptp.WE){node.ptp.WE = false;
+            Array_Add(new_fds, input.tcpsessions, newfd);
+            printf("Connection established on socket: %d\n", newfd);
+            printf("Sending Welcome message\n");
+        }
 
         //USER related flags handling
         if (node.user.debug){node.user.debug = false;
@@ -177,7 +205,11 @@ int main (int argc, char **argv)
             //TODO
         }
 
-
+        /*
+        *
+        * END OF FLAG CHECKING
+        * 
+        */
 
 
     }

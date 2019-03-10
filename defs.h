@@ -76,7 +76,7 @@ struct input{
     char uport[63]; //self udp port (access server)
     struct ipport rs_id; //root server ip and port
     int tcpsessions; //tcp session to provide
-    char bestpops[63]; //number of access points to keep
+    int bestpops; //number of access points to keep
     char tsecs[63]; //root update time
     bool display; 
     bool debug;

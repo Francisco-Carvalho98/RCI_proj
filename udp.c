@@ -20,7 +20,7 @@ void udp_client (int key, char *message, struct ipport ipport){
     if(fd==-1){perror("udp_client socket()");exit(1);}
     printf("udp socket created: %d\n", fd);
     
-    n=sendto(fd,message,strlen(message),0,res->ai_addr,res->ai_addrlen);
+    n=sendto(fd,message,BUFFER_SIZE,0,res->ai_addr,res->ai_addrlen);
     if(n==-1){perror("udp_client sendto()");exit(1);}
     printf("message sent\n");
 

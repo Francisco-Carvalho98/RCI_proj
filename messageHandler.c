@@ -85,7 +85,7 @@ void user_decoder (char * message){
 }
 
 void tcp_encoder(char * command, char * data, int size){
-    char message[120];
+    char message[BUFFER_SIZE];
     if (!strcasecmp(command, "DA")) 
         sprintf(message, "DA %.4X\n%s", size, data);
 
