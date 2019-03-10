@@ -72,13 +72,12 @@ int main (int argc, char **argv)
         FD_SET(STDIN_FILENO,&rfds);
         for (int i = 0; i < input.tcpsessions; i++) if(new_fds[i]!=-1) FD_SET(new_fds[i], &rfds);
 
-
+        //Clears buffers for the next cicle
         memset(buffer, '\0', strlen(buffer));
         memset(&message, '\0', sizeof message);
 
         //GETS THE BIGGEST FD 
         if(!(maxfd=Array_Max(new_fds, input.tcpsessions))) maxfd = stcp_fd; 
-        printf("maxfd - %d\n", maxfd);
 
         counter=select(maxfd+1,&rfds,(fd_set*)NULL,(fd_set*)NULL, (struct timeval *)NULL);
         if(counter<=0){perror("select()"); exit(1);}
@@ -146,23 +145,25 @@ int main (int argc, char **argv)
 
 
         //USER related flags handling
-        if (node.user.debug){
+        if (node.user.debug){node.user.debug = false;
+            
+        }
+
+        if (node.user.display){node.user.display = false;
             //TODO
         }
 
-        if (node.user.display){
+        if (node.user.exit_){node.user.exit_ = false;
+            free(new_fds);
+            close(ctcp_fd);
+            exit(0);
+        }
+
+        if (node.user.format){node.user.format = false;
             //TODO
         }
 
-        if (node.user.exit_){
-            //TODO
-        }
-
-        if (node.user.format){
-            //TODO
-        }
-
-        if (node.user.status){
+        if (node.user.status){node.user.status = false;
             //TODO
         }
 
@@ -172,7 +173,7 @@ int main (int argc, char **argv)
             udp_decoder(buffer, &message);
         }       
 
-        if (node.user.tree){
+        if (node.user.tree){node.user.tree = false;
             //TODO
         }
 

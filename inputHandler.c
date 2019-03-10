@@ -20,7 +20,7 @@ void inputHandler (char **argv, int argc){
     strcpy(input.bestpops,"1");
     strcpy(input.tsecs,"5");
     input.display = true;
-    input.advanced = false;
+    input.debug = false;
     input.help = false;
 
     if (argc == 1) {
@@ -44,7 +44,7 @@ void inputHandler (char **argv, int argc){
         if (strcasecmp(argv[i],"-n") == 0) strcpy(input.bestpops,argv[++i]);
         if (strcasecmp(argv[i],"-x") == 0) strcpy(input.tsecs,argv[++i]);
         if (strcasecmp(argv[i],"-b") == 0) input.display = false;
-        if (strcasecmp(argv[i],"-d") == 0) input.advanced = true;
+        if (strcasecmp(argv[i],"-d") == 0) input.debug = true;
         if (strcasecmp(argv[i],"-h") == 0) input.help = true;
     } 
 
@@ -81,6 +81,6 @@ void print_input(){
     printf("Self IP, TCP and UDP ports: %s - %s - %s\n", input.ipaddr, input.tport, input.uport);
     printf("Root Server: %s:%s\n", input.rs_id.ip, input.rs_id.port);
     printf("Application variables: %d (sessions) - %s (bestp) - %s (tsecs)\n", input.tcpsessions, input.bestpops, input.tsecs);
-    printf("Flags: %d %d %d\n", input.display, input.advanced, input.help);
+    printf("Flags: %d %d %d\n", input.display, input.debug, input.help);
     return;
 }

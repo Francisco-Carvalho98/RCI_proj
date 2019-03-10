@@ -79,7 +79,7 @@ struct input{
     char bestpops[63]; //number of access points to keep
     char tsecs[63]; //root update time
     bool display; 
-    bool advanced;
+    bool debug;
     bool help;
 };
 

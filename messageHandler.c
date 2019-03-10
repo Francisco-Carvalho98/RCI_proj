@@ -58,6 +58,7 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
         strcpy(decoded->address.port,token);
         printf("decoded: %s %s\n", decoded->address.ip, decoded->address.port);
         return;}
+        
     
     //catches a POPREQ
     if (!strcasecmp(decoded->command, "POPREQ")){node.udp.POPREQ = true;return;}
