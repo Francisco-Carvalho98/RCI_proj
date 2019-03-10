@@ -83,12 +83,13 @@ int main (int argc, char **argv)
         counter=select(maxfd+1,&rfds,(fd_set*)NULL,(fd_set*)NULL, (struct timeval *)NULL);
         if(counter<=0){perror("select()"); exit(1);}
 
-        //checks for uplink connection packets ------ TCP
+        //checks for uplink connection packets ------ TCP 
         if(FD_ISSET(ctcp_fd,&rfds) ){
-            if((n=read(ctcp_fd,buffer,78))!=0){
+            if((n=read(ctcp_fd,buffer,128))!=0){
                 if(n==-1){ perror("read()");exit(1);}
-                if(is_root)printf("Detected traffic from stream source\n");
-                else{
+                if(is_root){printf("Detected traffic from stream source\n");
+                    tcp_encoder("DA", buffer, n);
+                }else{
                     printf("Detected traffic from uplink connection\n");
                     write(1, "Redirected:\n", strlen("Redirected:\n"));
                     write(1, buffer, n);

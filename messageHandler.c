@@ -67,3 +67,13 @@ void user_decode (char * command){
 
     
 }
+
+void tcp_encoder(char * command, char * data, int size){
+    char message[120];
+    if (!strcasecmp(command, "DA")) 
+        sprintf(message, "DA %.4X\n%s", size, data);
+
+    printf("message: %s\n", message);
+    printf("original data: %s\n", data);
+    strcpy(data, message);
+}
