@@ -27,11 +27,11 @@ void udp_client (int key, char *message, struct ipport ipport){
     freeaddrinfo(res);
 
     addrlen=sizeof(addr);
-    memset(message,0,strlen(message));//message variable reused to save received message
+    memset(message,'\0',BUFFER_SIZE);//message variable reused to save received message
 
     if (key!=1){//condition when REMOVE is sent and no answer is expected. would get stuck on recvfrom
         printf("Waiting for a reply from server\n");
-        n=recvfrom(fd,message,256,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen);
+        n=recvfrom(fd,message,BUFFER_SIZE,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen);
         if(n==-1){perror("udp_client recvfrom()");exit(1);}
         printf("Message received:\n");
         write(1,message,n);
