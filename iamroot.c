@@ -121,9 +121,9 @@ int main (int argc, char **argv)
 
         //checks for user input ---- STDIN
         if(FD_ISSET(STDIN_FILENO,&rfds) ){
-            fgets(buffer, 74, stdin);
-            write(1, "User: ", 6);
-            write(1, buffer, 74);}
+            fgets(buffer, BUFFER_SIZE, stdin);  
+            user_decoder(buffer);
+        }
 
         //check for udp access server requests -------- UDP
         if(FD_ISSET(sudp_fd,&rfds) ){
@@ -145,6 +145,36 @@ int main (int argc, char **argv)
         }
 
 
+        //USER related flags handling
+        if (node.user.debug){
+            //TODO
+        }
+
+        if (node.user.display){
+            //TODO
+        }
+
+        if (node.user.exit_){
+            //TODO
+        }
+
+        if (node.user.format){
+            //TODO
+        }
+
+        if (node.user.status){
+            //TODO
+        }
+
+        if (node.user.streams){node.user.streams = false;
+            strcpy(buffer, "DUMP\n");
+            udp_client(0, buffer, input.rs_id);
+            udp_decoder(buffer, &message);
+        }       
+
+        if (node.user.tree){
+            //TODO
+        }
 
 
 

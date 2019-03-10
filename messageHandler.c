@@ -67,10 +67,19 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
     return;
 }
 
-void user_decode (char * command){
+void user_decoder (char * message){
 
-    sscanf(command, "%s %s", command, command);
-
+    char command[10];
+    char args[10];
+    sscanf(message, "%s %s", command, args);
+    if (!strcasecmp(command, "streams")) node.user.streams = true;
+    else if (!strcasecmp(command, "debug")) node.user.debug = true;
+    else if (!strcasecmp(command, "display")) node.user.display = true;
+    else if (!strcasecmp(command, "exit")) node.user.exit_ = true;
+    else if (!strcasecmp(command, "format")) node.user.format = true;
+    else if (!strcasecmp(command, "status")) node.user.status = true;
+    else if (!strcasecmp(command, "tree")) node.user.tree = true;
+    else{printf("Unexpected error - user_decoder\n"); exit(EXIT_FAILURE);}
     
 }
 

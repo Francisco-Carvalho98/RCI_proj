@@ -116,6 +116,7 @@ int tcp_server ();
 void udp_encoder (char *, char *, struct ipport *);
 void udp_decoder (char *, struct message *);
 void tcp_encoder (char*, char*, int n);
+void user_decoder (char*);
 
 //global vars declaration
 struct access_point pop[10];
