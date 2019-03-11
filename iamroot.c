@@ -109,6 +109,9 @@ int main (int argc, char **argv)
         
         //checks for downlink connection attempts ------- TCP
         if(FD_ISSET(stcp_fd, &rfds) ){
+            addrlen=sizeof(addr);
+            if((newfd=accept(stcp_fd,(struct sockaddr*)&addr,(unsigned int *)&addrlen))==-1){perror("accept()");exit(1);}
+
             if (clients < input.tcpsessions){
                 node.ptp.WE = true;
                 clients++;}
