@@ -94,10 +94,16 @@ struct access_point {
     int key;
 };
 
+struct client {
+    struct ipport ipport;
+    int fd;
+};
+
 //iamroot.c
-int Array_Max (int *, int);
-int Array_Add (int *, int, int);
-int Array_Rem (int *, int, int);
+int Array_Max (struct client*);
+int Array_Add (struct client*, int);
+int Array_Rem (struct client*, int);
+int Array_Addipport (struct client *, int, char *, char *);
 
 //inputHandler.c
 void inputHandler (char **, int);
@@ -115,7 +121,7 @@ int tcp_server ();
 //packetHandler.c
 void udp_encoder (char *, char *, struct ipport *);
 void udp_decoder (char *, struct message *);
-void tcp_encoder (char*, char*, int n);
+void ptp_encoder (char*, char*, int n);
 void user_decoder (char*);
 
 //global vars declaration

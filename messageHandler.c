@@ -84,12 +84,14 @@ void user_decoder (char * message){
     
 }
 
-void tcp_encoder(char * command, char * data, int size){
+void ptp_encoder(char * command, char * data, int size){
     char message[BUFFER_SIZE];
-    if (!strcasecmp(command, "DA")) 
-        sprintf(message, "DA %.4X\n%s", size, data);
+    if (!strcasecmp(command, "DA")) sprintf(message, "DA %.4X\n%s", size, data);
+    else if(!strcasecmp(command, "NP")) sprintf(message, "NP %s:%s\n", input.ipaddr, input.tport);
 
-    printf("message: %s\n", message);
-    printf("original data: %s\n", data);
     strcpy(data, message);
+}
+
+void ptp_decoder (char *message){
+    
 }
