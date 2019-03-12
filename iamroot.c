@@ -9,7 +9,6 @@ int main (int argc, char **argv)
     struct message message; 
     int ctcp_fd, sudp_fd, stcp_fd; //tcp client socket
     bool is_root;
-    struct client *new_fds;
     
 
     inputHandler(argv, argc);//print_input();
@@ -171,9 +170,43 @@ int main (int argc, char **argv)
             printf("Sending Welcome message\n");
         }
 
+        if (node.ptp.BS){node.ptp.BS = false;
+            //TODO
+        }
+
+        if (node.ptp.DA){node.ptp.DA = false;
+            //TODO
+        }
+
+        if (node.ptp.NP){node.ptp.NP = false;
+            //TODO
+        }
+
+        if (node.ptp.PQ){node.ptp.PQ = false;
+            //TODO
+        }
+
+        if (node.ptp.PR){node.ptp.PR = false;
+            //TODO
+        }
+
+        if (node.ptp.RE){node.ptp.RE = false;
+            //TODO
+        }
+        if (node.ptp.SF){node.ptp.SF = false;
+            //TODO
+        }
+
+        if (node.ptp.TQ){node.ptp.TQ = false;
+            //TODO
+        }   
+        if (node.ptp.TR){node.ptp.TR = false;
+            //TODO
+        }
+
         //USER related flags handling
         if (node.user.debug){node.user.debug = false;
-            
+            //TODO
         }
 
         if (node.user.display){node.user.display = false;
@@ -204,6 +237,35 @@ int main (int argc, char **argv)
             //TODO
         }
 
+
+        //UDP related flags
+        if (node.udp.DUMP){
+            
+        }  
+        if (node.udp.ERROR){
+
+        } 
+        if (node.udp.POPREQ){
+
+        }  
+        if (node.udp.POPRESP){
+
+        }  
+        if (node.udp.REMOVE){
+
+        }  
+        if (node.udp.ROOTIS){
+
+        }  
+        if (node.udp.STREAMS){
+
+        }  
+        if (node.udp.URROOT){
+
+        }  
+        if (node.udp.WHOISROOT){
+
+        }
         /*
         *
         * END OF FLAG CHECKING

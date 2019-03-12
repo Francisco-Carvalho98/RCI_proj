@@ -87,11 +87,42 @@ void user_decoder (char * message){
 void ptp_encoder(char * command, char * data, int size){
     char message[BUFFER_SIZE];
     if (!strcasecmp(command, "DA")) sprintf(message, "DA %.4X\n%s", size, data);
-    else if(!strcasecmp(command, "NP")) sprintf(message, "NP %s:%s\n", input.ipaddr, input.tport);
+    else if (!strcasecmp(command, "NP")) sprintf(message, "NP %s:%s\n", input.ipaddr, input.tport);
+    else if (!strcasecmp(command, "WE")) sprintf(message, "WE %s:%s:%s\n", input.stream_id.name
+                                                                         , input.stream_id.ip
+                                                                         , input.stream_id.port);
+    else if (!strcasecmp(command, "RE")) sprintf(message, "RE %s:%s\n", new_fds[0].ipport.ip
+                                                                      , new_fds[0].ipport.port);
+    else{printf("Unexpected error - ptp_encoder\n");exit(EXIT_FAILURE);}
 
     strcpy(data, message);
 }
 
 void ptp_decoder (char *message){
+
+    char command[10];
+    char args[4][60];
+
+    //catches DA, TR
+    sscanf(message, "%s %s", command, args[0]);
+    if (!strcasecmp(command, "DA")) node.ptp.DA = true;
+    else if (!strcasecmp(command, "TR")) node.ptp.TR = true;
+
+    //catches PR
+    if(sscanf(message, "%s %s %s %s", command, args[0]) == 4);
+
+    //catches PQ
+    if(sscanf(message, "%s %s %s", command, args[0]) == 3);
     
+    //catches WE, NP, RE, TQ
+    if(sscanf(message, "%s %s", command, args[0]) == 2);
+
+    
+
+    
+
+    
+
+
+    //TODO SF, BS
 }

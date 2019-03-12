@@ -33,8 +33,8 @@ void udp_client (int key, char *message, struct ipport ipport){
         printf("Waiting for a reply from server\n");
         n=recvfrom(fd,message,BUFFER_SIZE,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen);
         if(n==-1){perror("udp_client recvfrom()");exit(1);}
-        printf("Message received:\n");
-        write(1,message,n);
+        //printf("Message received:\n");
+        //write(1,message,n);
     
         /*if((errcode=getnameinfo((struct sockaddr *)&addr,addrlen,host,sizeof host,service,sizeof service,0))!=0)
             fprintf(stderr,"error: getnameinfo: %s\n",gai_strerror(errcode));
