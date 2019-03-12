@@ -129,5 +129,6 @@ struct access_point pop[10];
 struct input input;
 struct application node;
 struct client *new_fds;
+bool is_root;
 
 #endif

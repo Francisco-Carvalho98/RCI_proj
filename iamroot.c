@@ -4,11 +4,10 @@
 
 int main (int argc, char **argv)
 {
-    char buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE], up_buffer[BUFFER_SIZE];
     memset(&pop, 0, sizeof pop);
     struct message message; 
     int ctcp_fd, sudp_fd, stcp_fd; //tcp client socket
-    bool is_root;
     
 
     inputHandler(argv, argc);//print_input();
@@ -19,7 +18,7 @@ int main (int argc, char **argv)
     udp_client(0, buffer, input.rs_id); //sends the built message
     udp_decoder(buffer, &message); //decodes received message
     
-    if (node.udp.URROOT){node.udp.ROOTIS = false;is_root=true;//APLICATION IS ROOT
+    if (node.udp.URROOT){node.udp.URROOT = false;is_root=true;//APLICATION IS ROOT
 
         //connects to stream source
         ctcp_fd = tcp_client(message.address); //printf("Connected to stream source on socket: %d\n", ctcp_fd);
@@ -72,13 +71,18 @@ int main (int argc, char **argv)
         FD_SET(stcp_fd, &rfds);
         FD_SET(STDIN_FILENO,&rfds);
         for (int i = 0; i < input.tcpsessions; i++) if(new_fds[i].fd!=-1) FD_SET(new_fds[i].fd, &rfds);
+        //test
+        printf("new_fds:\n");
+        for (int i = 0; i < input.tcpsessions; i++)  printf("%d ", new_fds[i].fd);
+        printf("\n");
 
         //Clears buffers for the next cicle
         memset(buffer, '\0', strlen(buffer));
         memset(&message, '\0', sizeof message);
 
         //GETS THE BIGGEST FD 
-        if(!(maxfd=Array_Max(new_fds))) maxfd = stcp_fd; 
+        if(!(maxfd=Array_Max(new_fds))) maxfd = stcp_fd;
+        printf("maxfd %d\n", maxfd); 
 
         counter=select(maxfd+1,&rfds,(fd_set*)NULL,(fd_set*)NULL, (struct timeval *)NULL);
         if(counter<=0){perror("select()"); exit(1);}
@@ -91,14 +95,16 @@ int main (int argc, char **argv)
 
         //checks for uplink connection packets ------ TCP 
         if(FD_ISSET(ctcp_fd,&rfds) ){
-            if((n=read(ctcp_fd,buffer,BUFFER_SIZE))!=0){if(n==-1){ perror("ctcp - read()");exit(1);}
+            if((n=read(ctcp_fd,buffer,BUFFER_SIZE))!=0){if(n==-1){ perror("uplink - read()");exit(1);}
                 if(is_root){printf("Detected traffic from stream source\n");
                     ptp_encoder("DA", buffer, n);
                     for (int i = 0; i < input.tcpsessions; i++)
-                    if (new_fds[i].fd != -1)
-                        if (write(new_fds[i].fd, buffer, strlen(buffer)) == -1){
-                            close(new_fds[i].fd); 
-                            Array_Rem(new_fds, new_fds[i].fd);}
+                        if (new_fds[i].fd != -1)
+                            if (write(new_fds[i].fd, buffer, strlen(buffer)) == -1){
+                                printf("Detected a connection failure, closing...\n");
+                                close(new_fds[i].fd); 
+                                clients--;
+                                Array_Rem(new_fds, new_fds[i].fd);break;}
                 }else{
                     printf("Detected traffic from uplink connection\n");
                     printf("%s\n", buffer);
@@ -111,12 +117,14 @@ int main (int argc, char **argv)
         //checks for downlink connection attempts ------- TCP
         else if(FD_ISSET(stcp_fd, &rfds) ){
             addrlen=sizeof(addr);
-            if((newfd=accept(stcp_fd,(struct sockaddr*)&addr,(unsigned int *)&addrlen))==-1){perror("accept()");exit(1);}
+            if((newfd=accept(stcp_fd,(struct sockaddr*)&addr,(unsigned int *)&addrlen))==-1){perror("downlink - accept()");exit(1);}
 
             if (clients < input.tcpsessions){
                 Array_Add(new_fds,newfd);
                 printf("Connection established on socket: %d\n", newfd);
                 printf("Sending Welcome message\n");
+                ptp_encoder("WE", buffer, 0);
+                write(newfd, buffer, strlen(buffer));
                 clients++;
             }else{
                 printf("Cant accept more clients, redirecting...\n");
@@ -153,8 +161,9 @@ int main (int argc, char **argv)
         //check for downlink connection packets ----- TCP
         for (int i = 0; i < input.tcpsessions; i++)
             if (FD_ISSET(new_fds[i].fd, &rfds) ){
-                if((n=read(newfd,buffer,BUFFER_SIZE))!=0){
-                    if(n==-1){perror("read()");exit(1);}/* ... */
+                printf("strange - fd: %d", new_fds[i].fd);
+                if((n=read(newfd,up_buffer,BUFFER_SIZE))!=0){
+                    if(n==-1){perror("downlink - read()");exit(1);}/* ... */
                     //write buffer in afd
                     write(1, "echo: ", 6);
                     write(1, buffer, n);}
@@ -174,7 +183,10 @@ int main (int argc, char **argv)
         * 
         */ 
 
-        //PTP related flags handling
+        /*
+        *   TCP related flags
+        * 
+        */ 
         if (node.ptp.WE){node.ptp.WE = false;
             //TODO
         }
@@ -202,18 +214,23 @@ int main (int argc, char **argv)
         if (node.ptp.RE){node.ptp.RE = false;
             //TODO
         }
+
         if (node.ptp.SF){node.ptp.SF = false;
             //TODO
         }
 
         if (node.ptp.TQ){node.ptp.TQ = false;
             //TODO
-        }   
+        }
+
         if (node.ptp.TR){node.ptp.TR = false;
             //TODO
         }
 
-        //USER related flags handling
+        /*
+        *   user related flags
+        * 
+        */ 
         if (node.user.debug){node.user.debug = false;
             //TODO
         }
@@ -247,34 +264,46 @@ int main (int argc, char **argv)
         }
 
 
-        //UDP related flags
+        /*
+        *   UDP related flags
+        * 
+        */ 
         if (node.udp.DUMP){
-            
-        }  
-        if (node.udp.ERROR){
-
-        } 
-        if (node.udp.POPREQ){
-
-        }  
-        if (node.udp.POPRESP){
-
-        }  
-        if (node.udp.REMOVE){
-
-        }  
-        if (node.udp.ROOTIS){
-
-        }  
-        if (node.udp.STREAMS){
-
-        }  
-        if (node.udp.URROOT){
-
-        }  
-        if (node.udp.WHOISROOT){
-
+            //TODO
         }
+
+        if (node.udp.ERROR){
+            //TODO
+        }
+
+        if (node.udp.POPREQ){
+            //TODO
+        }
+
+        if (node.udp.POPRESP){
+            //TODO
+        }
+
+        if (node.udp.REMOVE){
+            //TODO
+        }
+
+        if (node.udp.ROOTIS){
+            //TODO
+        }
+
+        if (node.udp.STREAMS){
+            //TODO
+        }
+
+        if (node.udp.URROOT){
+            //TODO
+        }
+
+        if (node.udp.WHOISROOT){
+            //TODO
+        }
+
         /*
         *
         * END OF FLAG CHECKING

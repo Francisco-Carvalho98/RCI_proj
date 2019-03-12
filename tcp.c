@@ -22,6 +22,7 @@ int tcp_client (struct ipport ipport){
     
     if((n=connect(fd,res->ai_addr,res->ai_addrlen))==-1){perror("tcp_client connect()");exit(1);}
 
+    printf("socket created - %d\n", fd);
     return fd;
 }
 
@@ -43,5 +44,6 @@ int tcp_server (){
 
     if(listen(fd,5)==-1){perror("tcp_server listen()");exit(1);}
 
+    printf("socket created - %d\n", fd);
     return fd;
 }

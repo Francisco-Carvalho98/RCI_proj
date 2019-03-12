@@ -18,11 +18,9 @@ void udp_client (int key, char *message, struct ipport ipport){
     
     fd=socket(res->ai_family,res->ai_socktype,res->ai_protocol);
     if(fd==-1){perror("udp_client socket()");exit(1);}
-    printf("udp socket created: %d\n", fd);
     
-    n=sendto(fd,message,BUFFER_SIZE,0,res->ai_addr,res->ai_addrlen);
+    n=sendto(fd,message,strlen(message),0,res->ai_addr,res->ai_addrlen);
     if(n==-1){perror("udp_client sendto()");exit(1);}
-    printf("message sent\n");
 
     freeaddrinfo(res);
 
@@ -41,15 +39,16 @@ void udp_client (int key, char *message, struct ipport ipport){
         else printf("sent by [%s:%s]\n",host,service);*/
     }
     sleep(1);
+    printf("socket closing %d\n", fd);
     close(fd);
      
     return;
 } 
 
 int udp_server (){
+
     struct addrinfo hints,*res;
     int fd,n;
-
     
     memset(&hints,0,sizeof hints);
     hints.ai_family=AF_INET;//IPv4
@@ -65,5 +64,6 @@ int udp_server (){
     n=bind(fd,res->ai_addr,res->ai_addrlen);
     if(n==-1){perror("udp_server bind()");exit(1);}
 
+    printf("socket created - %d\n", fd);
     return fd;
 }

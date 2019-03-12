@@ -105,7 +105,7 @@ void ptp_decoder (char *message){
 
     //catches DA, TR
     sscanf(message, "%s %s", command, args[0]);
-    if (!strcasecmp(command, "DA")) node.ptp.DA = true;
+    if (!strcasecmp(command, "DA")){node.ptp.DA = true;return;}
     else if (!strcasecmp(command, "TR")) node.ptp.TR = true;
 
     //catches PR
@@ -116,12 +116,6 @@ void ptp_decoder (char *message){
     
     //catches WE, NP, RE, TQ
     if(sscanf(message, "%s %s", command, args[0]) == 2);
-
-    
-
-    
-
-    
 
 
     //TODO SF, BS
