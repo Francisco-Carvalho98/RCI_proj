@@ -91,50 +91,48 @@ int main (int argc, char **argv)
 
         //checks for uplink connection packets ------ TCP 
         if(FD_ISSET(ctcp_fd,&rfds) ){
-            if((n=read(ctcp_fd,buffer,BUFFER_SIZE))!=0){
-                if(n==-1){ perror("read()");exit(1);}
+            if((n=read(ctcp_fd,buffer,BUFFER_SIZE))!=0){if(n==-1){ perror("ctcp - read()");exit(1);}
                 if(is_root){printf("Detected traffic from stream source\n");
                     ptp_encoder("DA", buffer, n);
+                    for (int i = 0; i < input.tcpsessions; i++)
+                    if (new_fds[i].fd != -1)
+                        if (write(new_fds[i].fd, buffer, strlen(buffer)) == -1){
+                            close(new_fds[i].fd); 
+                            Array_Rem(new_fds, new_fds[i].fd);}
                 }else{
                     printf("Detected traffic from uplink connection\n");
                     printf("%s\n", buffer);
                 }
                 //sends stream downstream
-                for (int i = 0; i < input.tcpsessions; i++)
-                    if (new_fds[i].fd != -1)
-                        if (write(new_fds[i].fd, buffer, BUFFER_SIZE) == -1){
-                            close(new_fds[i].fd); 
-                            Array_Rem(new_fds, new_fds[i].fd);}}}
+                
+            }
+        }
         
         //checks for downlink connection attempts ------- TCP
-        if(FD_ISSET(stcp_fd, &rfds) ){
+        else if(FD_ISSET(stcp_fd, &rfds) ){
             addrlen=sizeof(addr);
             if((newfd=accept(stcp_fd,(struct sockaddr*)&addr,(unsigned int *)&addrlen))==-1){perror("accept()");exit(1);}
 
             if (clients < input.tcpsessions){
-                node.ptp.WE = true;
-                clients++;}
-            else node.ptp.RE = true;     
-        }
-
-        //check for downlink connection packets ----- TCP
-        for (int i = 0; i < input.tcpsessions; i++)
-            if (FD_ISSET(new_fds[i].fd, &rfds) ){
-                if((n=read(newfd,buffer,BUFFER_SIZE))!=0){
-                    if(n==-1){perror("read()");exit(1);}/* ... */
-                    //write buffer in afd
-                    write(1, "echo: ", 6);
-                    write(1, buffer, n);}
+                Array_Add(new_fds,newfd);
+                printf("Connection established on socket: %d\n", newfd);
+                printf("Sending Welcome message\n");
+                clients++;
+            }else{
+                printf("Cant accept more clients, redirecting...\n");
             }
 
+                
+        }
+
         //checks for user input ---- STDIN
-        if(FD_ISSET(STDIN_FILENO,&rfds) ){
+        else if(FD_ISSET(STDIN_FILENO,&rfds) ){
             fgets(buffer, BUFFER_SIZE, stdin);  
             user_decoder(buffer);
         }
 
         //check for udp access server requests -------- UDP
-        if(FD_ISSET(sudp_fd,&rfds) ){
+        else if(FD_ISSET(sudp_fd,&rfds) ){
 
             printf("Detected traffic to upd access server\n");
             addrlen=sizeof(addr);
@@ -151,6 +149,19 @@ int main (int argc, char **argv)
             n=sendto(sudp_fd,buffer,strlen(buffer),0,(struct sockaddr*)&addr,addrlen);
             if(n==-1)/*error*/exit(1);
         }
+
+        //check for downlink connection packets ----- TCP
+        for (int i = 0; i < input.tcpsessions; i++)
+            if (FD_ISSET(new_fds[i].fd, &rfds) ){
+                if((n=read(newfd,buffer,BUFFER_SIZE))!=0){
+                    if(n==-1){perror("read()");exit(1);}/* ... */
+                    //write buffer in afd
+                    write(1, "echo: ", 6);
+                    write(1, buffer, n);}
+                break;
+            }
+
+
         /*
         *
         * END OF THE READ SET CHECKS
@@ -159,15 +170,13 @@ int main (int argc, char **argv)
 
         /*
         *
-        * START OF FLAG CHECKING
+        * START OF FLAG CHECKING. THIS MEANS THE MESSAGE WAS RECEIVED
         * 
         */ 
 
         //PTP related flags handling
         if (node.ptp.WE){node.ptp.WE = false;
-            Array_Add(new_fds,newfd);
-            printf("Connection established on socket: %d\n", newfd);
-            printf("Sending Welcome message\n");
+            //TODO
         }
 
         if (node.ptp.BS){node.ptp.BS = false;
