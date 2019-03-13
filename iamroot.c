@@ -42,18 +42,20 @@ int main (int argc, char **argv)
         //build POPREQ message
         memset(buffer, '\0', strlen(buffer));
         strcpy(buffer, "POPREQ\n"); //printf("Sending: %s to %s:%s\n",buffer, message.address.adress, message.address.port);
+        udp_client(0, buffer, message.address);//send it
 
-        //send it
-        udp_client(0, buffer, message.address);
-
-        //memset(&message, '\0', sizeof message);
         //decode POPRESP received message
-        udp_decoder(buffer, &message); printf("Message decoded: %s %s\n", message.address.ip, message.address.port);//exit(0);
+        udp_decoder(buffer, &message); 
         
         //connects to tree entry point
-        ctcp_fd = tcp_client(message.address); printf("Connected to point of presence\n");
-        stcp_fd = tcp_server(); printf("tcp downlink server created on socket %d\n", stcp_fd);
+        ctcp_fd = tcp_client(message.address); if(input.debug)printf("Connected to point of presence\n");
+
+        //udp access server only needed if root
         sudp_fd = -1;
+
+        //initializes tcp downlink server
+        stcp_fd = tcp_server(); if(input.debug)printf("tcp downlink server created on socket %d\n", stcp_fd);
+        
 
     }else{printf("Unexpected error - iamroot\n");exit(EXIT_FAILURE);}
 
