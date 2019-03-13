@@ -4,13 +4,16 @@
 
 int main (int argc, char **argv)
 {
-    char buffer[BUFFER_SIZE], up_buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE], uplink_buffer[BUFFER_SIZE];
     memset(&pop, 0, sizeof pop);
     struct message message; 
-    int ctcp_fd, sudp_fd, stcp_fd; //tcp client socket
+    struct message uplink_message;
+    int ctcp_fd, sudp_fd, stcp_fd;
     
+    //takes care of program input args or sets to default if not specified
+    inputHandler(argv, argc);
 
-    inputHandler(argv, argc);//print_input();
+    //allocs client struct to the number of tcpsessions supported by node
     new_fds = (struct client*)calloc(input.tcpsessions, sizeof(struct client));
     for (int i = 0; i < input.tcpsessions; i++) new_fds[i].fd =-1;
 
@@ -48,8 +51,8 @@ int main (int argc, char **argv)
         udp_decoder(buffer, &message); printf("Message decoded: %s %s\n", message.address.ip, message.address.port);//exit(0);
         
         //connects to tree entry point
-        ctcp_fd = tcp_client(message.address); printf("Connected to tree entry point\n");
-        stcp_fd = tcp_server(); printf("tcp node downlink server created on socket %d\n", stcp_fd);
+        ctcp_fd = tcp_client(message.address); printf("Connected to point of presence\n");
+        stcp_fd = tcp_server(); printf("tcp downlink server created on socket %d\n", stcp_fd);
         sudp_fd = -1;
 
     }else{printf("Unexpected error - iamroot\n");exit(EXIT_FAILURE);}
@@ -71,10 +74,6 @@ int main (int argc, char **argv)
         FD_SET(stcp_fd, &rfds);
         FD_SET(STDIN_FILENO,&rfds);
         for (int i = 0; i < input.tcpsessions; i++) if(new_fds[i].fd!=-1) FD_SET(new_fds[i].fd, &rfds);
-        //test
-        printf("new_fds:\n");
-        for (int i = 0; i < input.tcpsessions; i++)  printf("%d ", new_fds[i].fd);
-        printf("\n");
 
         //Clears buffers for the next cicle
         memset(buffer, '\0', strlen(buffer));
@@ -82,7 +81,6 @@ int main (int argc, char **argv)
 
         //GETS THE BIGGEST FD 
         if(!(maxfd=Array_Max(new_fds))) maxfd = stcp_fd;
-        printf("maxfd %d\n", maxfd); 
 
         counter=select(maxfd+1,&rfds,(fd_set*)NULL,(fd_set*)NULL, (struct timeval *)NULL);
         if(counter<=0){perror("select()"); exit(1);}
@@ -104,10 +102,10 @@ int main (int argc, char **argv)
                                 printf("Detected a connection failure, closing...\n");
                                 close(new_fds[i].fd); 
                                 clients--;
-                                Array_Rem(new_fds, new_fds[i].fd);break;}
+                                Array_Rem(new_fds, new_fds[i].fd);}
                 }else{
                     printf("Detected traffic from uplink connection\n");
-                    printf("%s\n", buffer);
+                    ptp_decoder(buffer, &message);
                 }
                 //sends stream downstream
                 
@@ -128,15 +126,11 @@ int main (int argc, char **argv)
                 clients++;
             }else{
                 printf("Cant accept more clients, redirecting...\n");
-            }
-
-                
-        }
-
-        //checks for user input ---- STDIN
-        else if(FD_ISSET(STDIN_FILENO,&rfds) ){
-            fgets(buffer, BUFFER_SIZE, stdin);  
-            user_decoder(buffer);
+                ptp_encoder("RE", buffer, 0);
+                printf("buffer %s\n", buffer);
+                write(newfd, buffer, strlen(buffer));
+                close(newfd);
+            }           
         }
 
         //check for udp access server requests -------- UDP
@@ -158,15 +152,28 @@ int main (int argc, char **argv)
             if(n==-1)/*error*/exit(1);
         }
 
+        //checks for user input ---- STDIN
+        else if(FD_ISSET(STDIN_FILENO,&rfds) ){
+            fgets(buffer, BUFFER_SIZE, stdin);  
+            user_decoder(buffer);
+        }
+
         //check for downlink connection packets ----- TCP
+        
         for (int i = 0; i < input.tcpsessions; i++)
             if (FD_ISSET(new_fds[i].fd, &rfds) ){
-                printf("strange - fd: %d", new_fds[i].fd);
-                if((n=read(newfd,up_buffer,BUFFER_SIZE))!=0){
-                    if(n==-1){perror("downlink - read()");exit(1);}/* ... */
+                printf("strange - fd: %d\n", new_fds[i].fd);
+                if((n=read(new_fds[i].fd,uplink_buffer,BUFFER_SIZE))!=0){
+                    if(n==-1){perror("downlink - read()");/*exit(1);*/}
                     //write buffer in afd
                     write(1, "echo: ", 6);
-                    write(1, buffer, n);}
+                    write(1, uplink_buffer, n);
+                }else{
+                    printf("Detected a connection failure, closing...\n");
+                    close(new_fds[i].fd); 
+                    clients--;
+                    Array_Rem(new_fds, new_fds[i].fd);
+                }
                 break;
             }
 
@@ -179,7 +186,7 @@ int main (int argc, char **argv)
 
         /*
         *
-        * START OF FLAG CHECKING. THIS MEANS THE MESSAGE WAS RECEIVED
+        * START OF FLAG CHECKING. THIS MEANS THE MESSAGE ASSOCIATED WITH THE FLAG NAME WAS RECEIVED
         * 
         */ 
 
@@ -188,6 +195,10 @@ int main (int argc, char **argv)
         * 
         */ 
         if (node.ptp.WE){node.ptp.WE = false;
+            if(input.debug)printf("WE detected\n%s", buffer);
+            ptp_encoder("NP", buffer, 0);
+            printf("buffer %s\n", buffer);
+            write(ctcp_fd, buffer, strlen(buffer));
             //TODO
         }
 
@@ -196,10 +207,12 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.DA){node.ptp.DA = false;
+            if(input.debug)printf("DA detected\n");
             //TODO
         }
 
         if (node.ptp.NP){node.ptp.NP = false;
+            if(input.debug)printf("NP detected\n%s", buffer);
             //TODO
         }
 
@@ -212,7 +225,11 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.RE){node.ptp.RE = false;
-            //TODO
+            if(input.debug)printf("RE detected\n%s", buffer);
+            if(input.debug)printf("Closing ctcp: %d\n", ctcp_fd);
+            close(ctcp_fd);
+            ctcp_fd = tcp_client(message.address);
+            sleep(3);
         }
 
         if (node.ptp.SF){node.ptp.SF = false;

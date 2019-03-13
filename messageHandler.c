@@ -51,12 +51,10 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
         else {printf("Unexpected error - udp\n");exit(EXIT_FAILURE);}
         //splits address into ip and port
         token = strtok(decoded->args[0],":");//neglets stream name
-        printf("token - %s\n", token);
         token = strtok(NULL,":");
         strcpy(decoded->address.ip,token);
         token = strtok(NULL," ");
         strcpy(decoded->address.port,token);
-        printf("decoded: %s %s\n", decoded->address.ip, decoded->address.port);
         return;}
         
     
@@ -80,7 +78,7 @@ void user_decoder (char * message){
     else if (!strcasecmp(command, "format")) node.user.format = true;
     else if (!strcasecmp(command, "status")) node.user.status = true;
     else if (!strcasecmp(command, "tree")) node.user.tree = true;
-    else{printf("Unexpected error - user_decoder\n"); exit(EXIT_FAILURE);}
+    else printf("Invalid command\n");
     
 }
 
@@ -91,32 +89,45 @@ void ptp_encoder(char * command, char * data, int size){
     else if (!strcasecmp(command, "WE")) sprintf(message, "WE %s:%s:%s\n", input.stream_id.name
                                                                          , input.stream_id.ip
                                                                          , input.stream_id.port);
-    else if (!strcasecmp(command, "RE")) sprintf(message, "RE %s:%s\n", new_fds[0].ipport.ip
-                                                                      , new_fds[0].ipport.port);
+    else if (!strcasecmp(command, "RE")) sprintf(message, "RE %s:%s\n", /*TEMP*/input.ipaddr, input.tport/*new_fds[0].ipport.ip
+                                                                      , new_fds[0].ipport.port*/);
     else{printf("Unexpected error - ptp_encoder\n");exit(EXIT_FAILURE);}
+
 
     strcpy(data, message);
 }
 
-void ptp_decoder (char *message){
+void ptp_decoder (char *message, struct message *decoded){
 
     char command[10];
-    char args[4][60];
+    char args[3][60];
+    char *token;
 
     //catches DA, TR
     sscanf(message, "%s %s", command, args[0]);
     if (!strcasecmp(command, "DA")){node.ptp.DA = true;return;}
-    else if (!strcasecmp(command, "TR")) node.ptp.TR = true;
+    else if (!strcasecmp(command, "TR")){node.ptp.TR = true;return;}
+    //else{printf("Unexpected error ptp_decoder\n");exit(EXIT_FAILURE);}
 
     //catches PR
-    if(sscanf(message, "%s %s %s %s", command, args[0]) == 4);
+    if(sscanf(message, "%s %s %s %s", command, args[0], args[1], args[2]) == 4);
 
     //catches PQ
-    if(sscanf(message, "%s %s %s", command, args[0]) == 3);
+    if(sscanf(message, "%s %s %s", command, args[0], args[1]) == 3);
     
     //catches WE, NP, RE, TQ
-    if(sscanf(message, "%s %s", command, args[0]) == 2);
-
+    if(sscanf(message, "%s %s", command, args[0]) == 2){
+        if(!strcasecmp(command, "WE")){node.ptp.WE = true;
+            
+        }
+        else if(!strcasecmp(command, "RE")){node.ptp.RE = true;
+            token = strtok(args[0],":");
+            strcpy(decoded->address.ip,token);
+            token = strtok(NULL," ");
+            strcpy(decoded->address.port,token);
+            printf("bruuu - %s:%s\n", decoded->address.ip, decoded->address.port);
+        }
+    }
 
     //TODO SF, BS
 }

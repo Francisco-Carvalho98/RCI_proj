@@ -122,6 +122,7 @@ int tcp_server ();
 void udp_encoder (char *, char *, struct ipport *);
 void udp_decoder (char *, struct message *);
 void ptp_encoder (char*, char*, int n);
+void ptp_decoder (char*, struct message *);
 void user_decoder (char*);
 
 //global vars declaration

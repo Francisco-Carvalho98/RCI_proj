@@ -20,7 +20,7 @@ void inputHandler (char **argv, int argc){
     input.bestpops = 1;
     strcpy(input.tsecs,"5");
     input.display = true;
-    input.debug = false;
+    input.debug = true;
     input.help = false;
 
     if (argc == 1) {

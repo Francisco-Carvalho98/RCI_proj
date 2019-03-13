@@ -38,8 +38,9 @@ void udp_client (int key, char *message, struct ipport ipport){
             fprintf(stderr,"error: getnameinfo: %s\n",gai_strerror(errcode));
         else printf("sent by [%s:%s]\n",host,service);*/
     }
-    sleep(1);
-    printf("socket closing %d\n", fd);
+
+    if(input.debug)printf("cudp socket created %d\n", fd);
+    if(input.debug)printf("cudp socket closing %d\n", fd);
     close(fd);
      
     return;
@@ -64,6 +65,6 @@ int udp_server (){
     n=bind(fd,res->ai_addr,res->ai_addrlen);
     if(n==-1){perror("udp_server bind()");exit(1);}
 
-    printf("socket created - %d\n", fd);
+    if(input.debug)printf("sudp socket created - %d\n", fd);
     return fd;
 }
