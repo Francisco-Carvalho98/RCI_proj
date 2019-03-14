@@ -108,13 +108,11 @@ int main (int argc, char **argv)
                 Array_Add(new_fds,newfd);  
                 ptp_encoder("WE", buffer, 0);
                 write(newfd, buffer, strlen(buffer));if(input.debug)printf("Sending Welcome message\n");
-                clients++;
-            }else{
-                if(input.debug)printf("Cant accept more clients, redirecting...\n");
+                clients++;}
+            else{if(input.debug)printf("Cant accept more clients, redirecting...\n");
                 ptp_encoder("RE", buffer, 0);
                 write(newfd, buffer, strlen(buffer));
-                close(newfd);
-            }           
+                close(newfd);}           
         }
 
         //check for udp access server requests -------- UDP
@@ -162,7 +160,7 @@ int main (int argc, char **argv)
         */ 
 
         /*
-        *   TCP related flags
+        *   PTP related flags
         * 
         */ 
         if (node.ptp.WE){node.ptp.WE = false;
@@ -170,7 +168,6 @@ int main (int argc, char **argv)
             ptp_encoder("NP", buffer, 0);
             write(ctcp_fd, buffer, strlen(buffer));
             //TODO
-            //Change temp NP encoding
             //Check if stream is the desired one
         }
 
@@ -237,6 +234,7 @@ int main (int argc, char **argv)
             free(new_fds);
             close(ctcp_fd);
             exit(0);
+            //TODO
         }
 
         if (node.user.format){node.user.format = false;
@@ -244,20 +242,7 @@ int main (int argc, char **argv)
         }
 
         if (node.user.status){node.user.status = false;
-            printf("Connected to stream: %s:%s:%s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
-            if (input.SF) printf("Stream is good\n");
-            else printf("Stream broken\n");
-            if (is_root){ 
-                printf("I am root!\n");
-                printf("UDP access server on: %s:%s\n", input.ipaddr, input.uport);
-            }else{ 
-                printf("I am groot!\n");
-                printf("Uplink -- TODO\n");
-            }
-            printf("Access point on: %s:%s\n", input.ipaddr, input.tport);
-            printf("Supported sessions: %d - Occupied: %d\n", input.tcpsessions, clients);
-            printf("Connected pairs:\n");
-            for (int i = 0; i < input.tcpsessions; i++) if(new_fds[i].fd != -1) printf("%s:%s\n", new_fds[i].ipport.ip, new_fds[i].ipport.port);
+            print_status(clients);
         }
 
         if (node.user.streams){node.user.streams = false;
@@ -357,7 +342,19 @@ void send_downstream (int * clients, char * buffer){
         if (new_fds[i].fd != -1)
             if (write(new_fds[i].fd, buffer, strlen(buffer)) == -1){
                 printf("Detected a connection failure, closing...\n");
-                close(new_fds[i].fd); 
-                clients--;
+                close(new_fds[i].fd); clients--;
                 Array_Rem(new_fds, new_fds[i].fd);}
+}
+
+void print_status (int clients){
+    printf("Connected to stream: %s:%s:%s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
+    if (input.SF) printf("Stream is good\n");
+    else printf("Stream broken\n");
+    if (is_root){printf("I am root!\n");
+        printf("UDP access server on: %s:%s\n", input.ipaddr, input.uport);}
+    else{printf("I am groot!\n");printf("Uplink -- TODO\n");}
+    printf("Access point on: %s:%s\n", input.ipaddr, input.tport);
+    printf("Supported sessions: %d - Occupied: %d\n", input.tcpsessions, clients);
+    printf("Connected pairs:\n");
+    for (int i = 0; i < input.tcpsessions; i++) if(new_fds[i].fd != -1) printf("%s:%s\n", new_fds[i].ipport.ip, new_fds[i].ipport.port);
 }

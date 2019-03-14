@@ -106,6 +106,7 @@ int Array_Add (struct client*, int);
 int Array_Rem (struct client*, int);
 int Array_Addipport (struct client *, int, char *, char *);
 void send_downstream (int *, char *);
+void print_status(int);
 
 //inputHandler.c
 void inputHandler (char **, int);
