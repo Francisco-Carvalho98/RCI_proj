@@ -81,6 +81,7 @@ struct input{
     bool display; 
     bool debug;
     bool help;
+    bool SF;
 };
 
 struct message{
@@ -104,6 +105,7 @@ int Array_Max (struct client*);
 int Array_Add (struct client*, int);
 int Array_Rem (struct client*, int);
 int Array_Addipport (struct client *, int, char *, char *);
+void send_downstream (int *, char *);
 
 //inputHandler.c
 void inputHandler (char **, int);

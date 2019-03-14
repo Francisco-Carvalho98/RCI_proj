@@ -1,13 +1,11 @@
 #include "defs.h"
 
-
-
 int main (int argc, char **argv)
 {
-    char buffer[BUFFER_SIZE], uplink_buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE], downlink_buffer[BUFFER_SIZE];
     memset(&pop, 0, sizeof pop);
     struct message message; 
-    struct message uplink_message;
+    struct message downlink_message;
     int ctcp_fd, sudp_fd, stcp_fd;
     
     //takes care of program input args or sets to default if not specified
@@ -48,25 +46,21 @@ int main (int argc, char **argv)
         udp_decoder(buffer, &message); 
         
         //connects to tree entry point
-        ctcp_fd = tcp_client(message.address); if(input.debug)printf("Connected to point of presence\n");
+        ctcp_fd = tcp_client(message.address);if(input.debug)printf("Connected to point of presence\n");
 
         //udp access server only needed if root
         sudp_fd = -1;
 
         //initializes tcp downlink server
-        stcp_fd = tcp_server(); if(input.debug)printf("tcp downlink server created on socket %d\n", stcp_fd);
+        stcp_fd = tcp_server();if(input.debug)printf("tcp downlink server created on socket %d\n", stcp_fd);
         
 
     }else{printf("Unexpected error - iamroot\n");exit(EXIT_FAILURE);}
 
     fd_set rfds;
-    int counter, n, addrlen, newfd=-1, maxfd;
+    int counter, n, addrlen, newfd=-1, maxfd, clients = 0;
     struct sockaddr_in addr;
-    int clients = 0;
-    //struct timeval timeout;
-    //time_t start = clock();
     
-
     while(1){
 
         //BUILDS READ SET
@@ -94,49 +88,37 @@ int main (int argc, char **argv)
         */
 
         //checks for uplink connection packets ------ TCP 
-        if(FD_ISSET(ctcp_fd,&rfds) ){
+        if(FD_ISSET(ctcp_fd,&rfds)){
             if((n=read(ctcp_fd,buffer,BUFFER_SIZE))!=0){if(n==-1){ perror("uplink - read()");exit(1);}
-                if(is_root){printf("Detected traffic from stream source\n");
+                if(is_root){//printf("Detected traffic from stream source\n");
                     ptp_encoder("DA", buffer, n);
-                    for (int i = 0; i < input.tcpsessions; i++)
-                        if (new_fds[i].fd != -1)
-                            if (write(new_fds[i].fd, buffer, strlen(buffer)) == -1){
-                                printf("Detected a connection failure, closing...\n");
-                                close(new_fds[i].fd); 
-                                clients--;
-                                Array_Rem(new_fds, new_fds[i].fd);}
-                }else{
-                    printf("Detected traffic from uplink connection\n");
-                    ptp_decoder(buffer, &message);
-                }
-                //sends stream downstream
-                
+                    send_downstream(&clients, buffer); 
+                    input.SF = true;
+                }else{//printf("Detected traffic from uplink connection\n");
+                    ptp_decoder(buffer, &message);}
             }
         }
         
         //checks for downlink connection attempts ------- TCP
-        else if(FD_ISSET(stcp_fd, &rfds) ){
+        else if(FD_ISSET(stcp_fd, &rfds)){
             addrlen=sizeof(addr);
             if((newfd=accept(stcp_fd,(struct sockaddr*)&addr,(unsigned int *)&addrlen))==-1){perror("downlink - accept()");exit(1);}
 
-            if (clients < input.tcpsessions){
-                Array_Add(new_fds,newfd);
-                printf("Connection established on socket: %d\n", newfd);
-                printf("Sending Welcome message\n");
+            if (clients < input.tcpsessions){if(input.debug)printf("Connection established on socket: %d\n", newfd);
+                Array_Add(new_fds,newfd);  
                 ptp_encoder("WE", buffer, 0);
-                write(newfd, buffer, strlen(buffer));
+                write(newfd, buffer, strlen(buffer));if(input.debug)printf("Sending Welcome message\n");
                 clients++;
             }else{
-                printf("Cant accept more clients, redirecting...\n");
+                if(input.debug)printf("Cant accept more clients, redirecting...\n");
                 ptp_encoder("RE", buffer, 0);
-                printf("buffer %s\n", buffer);
                 write(newfd, buffer, strlen(buffer));
                 close(newfd);
             }           
         }
 
         //check for udp access server requests -------- UDP
-        else if(FD_ISSET(sudp_fd,&rfds) ){
+        else if(FD_ISSET(sudp_fd,&rfds)){
 
             printf("Detected traffic to upd access server\n");
             addrlen=sizeof(addr);
@@ -144,32 +126,21 @@ int main (int argc, char **argv)
             if(n==-1)/*error*/exit(1);
 
             udp_decoder(buffer, &message);
-            memset(buffer, '\0', strlen(buffer));
-            if (node.udp.POPREQ){node.udp.POPREQ = false; 
-                printf("POPREQ detected\n");
-                udp_encoder("POPRESP", buffer, &(pop[0].ipport));
-            }
 
-            n=sendto(sudp_fd,buffer,strlen(buffer),0,(struct sockaddr*)&addr,addrlen);
-            if(n==-1)/*error*/exit(1);
         }
 
         //checks for user input ---- STDIN
-        else if(FD_ISSET(STDIN_FILENO,&rfds) ){
+        else if(FD_ISSET(STDIN_FILENO,&rfds)){
             fgets(buffer, BUFFER_SIZE, stdin);  
             user_decoder(buffer);
         }
 
         //check for downlink connection packets ----- TCP
-        
         for (int i = 0; i < input.tcpsessions; i++)
-            if (FD_ISSET(new_fds[i].fd, &rfds) ){
-                printf("strange - fd: %d\n", new_fds[i].fd);
-                if((n=read(new_fds[i].fd,uplink_buffer,BUFFER_SIZE))!=0){
-                    if(n==-1){perror("downlink - read()");/*exit(1);*/}
-                    //write buffer in afd
-                    write(1, "echo: ", 6);
-                    write(1, uplink_buffer, n);
+            if (FD_ISSET(new_fds[i].fd, &rfds)){
+                if((n=read(new_fds[i].fd,downlink_buffer,BUFFER_SIZE))!=0){
+                    if(n==-1){perror("downlink - read()");exit(1);}
+                    write(1, downlink_buffer, n);
                 }else{
                     printf("Detected a connection failure, closing...\n");
                     close(new_fds[i].fd); 
@@ -178,8 +149,6 @@ int main (int argc, char **argv)
                 }
                 break;
             }
-
-
         /*
         *
         * END OF THE READ SET CHECKS
@@ -199,18 +168,20 @@ int main (int argc, char **argv)
         if (node.ptp.WE){node.ptp.WE = false;
             if(input.debug)printf("WE detected\n%s", buffer);
             ptp_encoder("NP", buffer, 0);
-            printf("buffer %s\n", buffer);
             write(ctcp_fd, buffer, strlen(buffer));
             //TODO
+            //Change temp NP encoding
+            //Check if stream is the desired one
         }
 
         if (node.ptp.BS){node.ptp.BS = false;
-            //TODO
+            input.SF = false;
+            send_downstream(&clients, "BS\n");
         }
 
         if (node.ptp.DA){node.ptp.DA = false;
             if(input.debug)printf("DA detected\n");
-            //TODO
+            send_downstream(&clients, buffer);
         }
 
         if (node.ptp.NP){node.ptp.NP = false;
@@ -235,7 +206,8 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.SF){node.ptp.SF = false;
-            //TODO
+            input.SF = true;
+            send_downstream(&clients, "SF\n");
         }
 
         if (node.ptp.TQ){node.ptp.TQ = false;
@@ -245,6 +217,9 @@ int main (int argc, char **argv)
         if (node.ptp.TR){node.ptp.TR = false;
             //TODO
         }
+
+
+
 
         /*
         *   user related flags
@@ -269,7 +244,20 @@ int main (int argc, char **argv)
         }
 
         if (node.user.status){node.user.status = false;
-            //TODO
+            printf("Connected to stream: %s:%s:%s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
+            if (input.SF) printf("Stream is good\n");
+            else printf("Stream broken\n");
+            if (is_root){ 
+                printf("I am root!\n");
+                printf("UDP access server on: %s:%s\n", input.ipaddr, input.uport);
+            }else{ 
+                printf("I am groot!\n");
+                printf("Uplink -- TODO\n");
+            }
+            printf("Access point on: %s:%s\n", input.ipaddr, input.tport);
+            printf("Supported sessions: %d - Occupied: %d\n", input.tcpsessions, clients);
+            printf("Connected pairs:\n");
+            for (int i = 0; i < input.tcpsessions; i++) if(new_fds[i].fd != -1) printf("%s:%s\n", new_fds[i].ipport.ip, new_fds[i].ipport.port);
         }
 
         if (node.user.streams){node.user.streams = false;
@@ -281,6 +269,8 @@ int main (int argc, char **argv)
         if (node.user.tree){node.user.tree = false;
             //TODO
         }
+
+
 
 
         /*
@@ -295,8 +285,11 @@ int main (int argc, char **argv)
             //TODO
         }
 
-        if (node.udp.POPREQ){
-            //TODO
+        if (node.udp.POPREQ){node.udp.POPREQ = false; 
+            printf("POPREQ detected\n");
+            memset(buffer, '\0', strlen(buffer));
+            udp_encoder("POPRESP", buffer, &(pop[0].ipport));
+            if((n=sendto(sudp_fd,buffer,strlen(buffer),0,(struct sockaddr*)&addr,addrlen))==-1){perror("udp_popreq - sendto\n");exit(1);}
         }
 
         if (node.udp.POPRESP){
@@ -357,4 +350,14 @@ int Array_Addipport (struct client *vector, int fd, char *ip, char *port){
             strcpy(vector[i].ipport.ip, port);
             return 0;}
     return -1;
+}
+
+void send_downstream (int * clients, char * buffer){
+    for (int i = 0; i < input.tcpsessions; i++)
+        if (new_fds[i].fd != -1)
+            if (write(new_fds[i].fd, buffer, strlen(buffer)) == -1){
+                printf("Detected a connection failure, closing...\n");
+                close(new_fds[i].fd); 
+                clients--;
+                Array_Rem(new_fds, new_fds[i].fd);}
 }

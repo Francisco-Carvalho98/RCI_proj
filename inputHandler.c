@@ -22,6 +22,7 @@ void inputHandler (char **argv, int argc){
     input.display = true;
     input.debug = true;
     input.help = false;
+    input.SF = false;
 
     if (argc == 1) {
         display_help();
