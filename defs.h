@@ -104,7 +104,7 @@ struct client {
 int Array_Max (struct client*);
 int Array_Add (struct client*, int);
 int Array_Rem (struct client*, int);
-int Array_Addipport (struct client *, int, char *, char *);
+int Array_Addipport (struct client *, int, struct ipport);
 void send_downstream (int *, char *);
 void print_status(int);
 
@@ -125,7 +125,7 @@ int tcp_server ();
 void udp_encoder (char *, char *, struct ipport *);
 void udp_decoder (char *, struct message *);
 void ptp_encoder (char*, char*, int n);
-void ptp_decoder (char*, struct message *);
+void ptp_decoder (char*, struct message *, int);
 void user_decoder (char*);
 
 //global vars declaration

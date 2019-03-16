@@ -97,11 +97,10 @@ void ptp_encoder(char * command, char * data, int size){
     strcpy(data, message);
 }
 
-void ptp_decoder (char *message, struct message *decoded){
+void ptp_decoder (char *message, struct message *decoded, int key){
 
     char command[10];
     char args[3][60];
-    char *token;
 
     //catches DA, TR
     sscanf(message, "%s %s", command, args[0]);
@@ -117,17 +116,18 @@ void ptp_decoder (char *message, struct message *decoded){
     
     //catches WE, NP, RE, TQ
     if(sscanf(message, "%s %s", command, args[0]) == 2){
+        printf("uh\n");
         if(!strcasecmp(command, "WE")){node.ptp.WE = true;
             
         }
         else if(!strcasecmp(command, "RE")){node.ptp.RE = true;
-            token = strtok(args[0],":");
-            strcpy(decoded->address.ip,token);
-            token = strtok(NULL," ");
-            strcpy(decoded->address.port,token);
-            printf("bruuu - %s:%s\n", decoded->address.ip, decoded->address.port);
+            sscanf(args[0], "%[^:]%*[:]%s", decoded->address.ip, decoded->address.port);
+        }
+        else if(!strcasecmp(command, "NP")){node.ptp.NP = true;
+            sscanf(args[0], "%[^:]%*[:]%s", decoded->address.ip, decoded->address.port);
+            Array_Addipport(new_fds, key, decoded->address);
         }
     }
-
+    printf("wut %s\n", command);
     //TODO SF, BS
 }

@@ -74,6 +74,7 @@ int main (int argc, char **argv)
         //Clears buffers for the next cicle
         memset(buffer, '\0', strlen(buffer));
         memset(&message, '\0', sizeof message);
+        memset(&message, '\0', sizeof downlink_message);
 
         //GETS THE BIGGEST FD 
         if(!(maxfd=Array_Max(new_fds))) maxfd = stcp_fd;
@@ -95,7 +96,7 @@ int main (int argc, char **argv)
                     send_downstream(&clients, buffer); 
                     input.SF = true;
                 }else{//printf("Detected traffic from uplink connection\n");
-                    ptp_decoder(buffer, &message);}
+                    ptp_decoder(buffer, &message, 0);}
             }
         }
         
@@ -139,6 +140,8 @@ int main (int argc, char **argv)
                 if((n=read(new_fds[i].fd,downlink_buffer,BUFFER_SIZE))!=0){
                     if(n==-1){perror("downlink - read()");exit(1);}
                     write(1, downlink_buffer, n);
+                    printf("\n");
+                    ptp_decoder(downlink_buffer, &downlink_message, new_fds[i].fd);
                 }else{
                     printf("Detected a connection failure, closing...\n");
                     close(new_fds[i].fd); 
@@ -183,7 +186,7 @@ int main (int argc, char **argv)
 
         if (node.ptp.NP){node.ptp.NP = false;
             if(input.debug)printf("NP detected\n%s", buffer);
-            //TODO
+            //DONE IN ptp_decoder FOR NOW
         }
 
         if (node.ptp.PQ){node.ptp.PQ = false;
@@ -324,15 +327,17 @@ int Array_Add (struct client *vector, int fd){
 }
 
 int Array_Rem (struct client *vector, int fd){
-    for(int i = 0; i < input.tcpsessions; i++) if (vector[i].fd == fd){vector[i].fd = -1; return 0;}
+    for(int i = 0; i < input.tcpsessions; i++) if (vector[i].fd == fd){vector[i].fd = -1; 
+                                                                       memset(&vector[i].ipport, '\0', sizeof(struct ipport));
+                                                                       return 0;}
     return -1;
 }
 
-int Array_Addipport (struct client *vector, int fd, char *ip, char *port){
+int Array_Addipport (struct client *vector, int fd, struct ipport ipport){
     for(int i = 0; i < input.tcpsessions; i++)  
         if (vector[i].fd == fd){
-            strcpy(vector[i].ipport.ip, ip);
-            strcpy(vector[i].ipport.ip, port);
+            strcpy(vector[i].ipport.ip, ipport.ip);
+            strcpy(vector[i].ipport.port, ipport.port);
             return 0;}
     return -1;
 }
