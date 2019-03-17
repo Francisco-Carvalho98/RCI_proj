@@ -6,7 +6,6 @@
 
 void inputHandler (char **argv, int argc){
     
-    char *token;
     char buffer[BUFFER_SIZE];
     struct message message;
 
@@ -37,11 +36,7 @@ void inputHandler (char **argv, int argc){
         if (strcasecmp(argv[i],"-i") == 0) strcpy(input.ipaddr,argv[++i]);   
         if (strcasecmp(argv[i],"-t") == 0) strcpy(input.tport,argv[++i]); 
         if (strcasecmp(argv[i],"-u") == 0) strcpy(input.uport,argv[++i]); 
-        if (strcasecmp(argv[i],"-s") == 0){
-            token = strtok(argv[++i],":");
-            strcpy(input.rs_id.ip,token);
-            token = strtok(NULL," ");
-            strcpy(input.rs_id.port,token);}
+        if (strcasecmp(argv[i],"-s") == 0) sscanf(argv[++i], "%[^:]%*[:]%s", input.rs_id.ip, input.rs_id.port);
         if (strcasecmp(argv[i],"-p") == 0) input.tcpsessions = atoi(argv[++i]);
         if (strcasecmp(argv[i],"-n") == 0) input.bestpops = atoi(argv[++i]);
         if (strcasecmp(argv[i],"-x") == 0) input.tsecs = atoi(argv[++i]);
@@ -54,16 +49,7 @@ void inputHandler (char **argv, int argc){
     if (input.help == true){display_help(); exit(0);}
     if (strcasecmp(input.ipaddr, "\n") == 0){printf("Must specify application IP\n");display_help();exit(0);}
 
-    // STREAM NAME
-    token = strtok(argv[1],":");
-    strcpy(input.stream_id.name,token);
-    // STREAM IP
-    token = strtok(NULL,":");
-    strcpy(input.stream_id.ip,token);
-
-    // STREAM PORT
-    token = strtok(NULL," ");
-    strcpy(input.stream_id.port,token);
+    sscanf(argv[1], "%[^:]%*[:]%[^:]%*[:]%s", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
 
     return;
 }

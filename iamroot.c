@@ -96,11 +96,11 @@ int main (int argc, char **argv)
         //checks for uplink connection packets ------ TCP 
         if(FD_ISSET(ctcp_fd,&rfds)){
             if((n=read(ctcp_fd,buffer,BUFFER_SIZE))!=0){if(n==-1){ perror("uplink - read()");exit(1);}
-                if(is_root){//printf("Detected traffic from stream source\n");
+                if(is_root){if(input.debug)printf("Detected traffic from stream source\n");
                     ptp_encoder("DA", buffer, n);
                     send_downstream(&clients, buffer); 
                     input.SF = true;
-                }else{//printf("Detected traffic from uplink connection\n");
+                }else{
                     ptp_decoder(buffer, &message, 0);}
             }else{if(input.debug)printf("Uplink connection failure\n");
                 close(ctcp_fd);ctcp_fd = -1;
