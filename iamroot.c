@@ -50,6 +50,8 @@ int main (int argc, char **argv)
     int counter, n, addrlen, newfd=-1, maxfd, clients = 0;
     struct sockaddr_in addr;
     struct timeval timeout;
+    
+    time_t start = time(NULL);
 
     while(1){
 
@@ -66,13 +68,15 @@ int main (int argc, char **argv)
         memset(&message, '\0', sizeof message);
         memset(&message, '\0', sizeof downlink_message);
 
-        timeout.tv_sec = input.tsecs - 1;
+        timeout.tv_sec = 2;
         timeout.tv_usec = 0;
+
         //GETS THE BIGGEST FD 
         if(!(maxfd=Array_Max(new_fds))) maxfd = stcp_fd;
 
         counter=select(maxfd+1,&rfds,(fd_set*)NULL,(fd_set*)NULL, &timeout);
-        if(counter<=0){perror("select()"); exit(1);}
+        if(counter<0){perror("select()"); exit(1);}
+        else if(counter == 0) printf("hmm ye\n");
 
 
         /*
@@ -300,7 +304,14 @@ int main (int argc, char **argv)
         * 
         */
 
-
+       //TIMER FOR ROOT SERVER UPDATE
+        if(is_root)
+            if (time(NULL) - start >= input.tsecs){
+                start = time(NULL);
+                printf("Elapsed 5 seconds\n");
+                udp_encoder("WHOISROOT", buffer, (struct ipport *)NULL); //builds WHOISROOT protocol message
+                udp_client(0, buffer, input.rs_id);
+            }
     }
     return 0;
 }
