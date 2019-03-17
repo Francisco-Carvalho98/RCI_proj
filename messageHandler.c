@@ -89,8 +89,8 @@ void ptp_encoder(char * command, char * data, int size){
     else if (!strcasecmp(command, "WE")) sprintf(message, "WE %s:%s:%s\n", input.stream_id.name
                                                                          , input.stream_id.ip
                                                                          , input.stream_id.port);
-    else if (!strcasecmp(command, "RE")) sprintf(message, "RE %s:%s\n", /*TEMP*/input.ipaddr, input.tport/*new_fds[0].ipport.ip
-                                                                      , new_fds[0].ipport.port*/);
+    else if (!strcasecmp(command, "RE")) sprintf(message, "RE %s:%s\n", new_fds[0].ipport.ip
+                                                                      , new_fds[0].ipport.port);
     else{printf("Unexpected error - ptp_encoder\n");exit(EXIT_FAILURE);}
 
 
