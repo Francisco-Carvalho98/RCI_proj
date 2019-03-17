@@ -46,6 +46,14 @@ int main (int argc, char **argv)
     //initializes tcp downlink server
     stcp_fd = tcp_server(); //printf("tcp root downlink server created on socket %d\n", stcp_fd);
 
+    //when the root leaves correctly, if the node that gets first to the root server
+    //and becomes the new root, and only has room for 1 connection, but gets several
+    //connection attempts, redirect doesnt work because the second connection attempt
+    //arrives before the first connection's NP and therefor new_fds ipport field is 
+    //still empty. quick fix: fill index 0 ipport with own ip and port
+    strcpy(new_fds[0].ipport.ip, input.ipaddr);
+    strcpy(new_fds[0].ipport.port, input.tport);
+
     fd_set rfds;
     int counter, n, addrlen, newfd=-1, maxfd, clients = 0;
     struct sockaddr_in addr;
