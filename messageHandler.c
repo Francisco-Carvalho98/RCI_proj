@@ -120,11 +120,9 @@ void ptp_decoder (char *message, struct message *decoded, int key){
     if(sscanf(message, "%s %s", command, args[0]) == 2){
         if(!strcasecmp(command, "WE")){node.ptp.WE = true;
                 sscanf(args[0], "%[^:]%*[:]%[^:]%*[:]%s", args[1], args[2], args[3]);
-                printf("uh %s %s %s\n", args[1], args[2], args[0]);
-                printf("bruh %s %s %s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
                 if (!strcasecmp(input.stream_id.name, args[1]) && !strcasecmp(input.stream_id.ip, args[2]) 
                                                                && !strcasecmp(input.stream_id.port, args[3])){
-                    if(input.debug)printf("Connected to desired stream\n");
+                    if(input.debug)printf("Connected to desired stream\n");return;
                 }else{printf("Connected to wrong stream, exiting...\n");exit(1);}
         }
         else if(!strcasecmp(command, "RE")){node.ptp.RE = true;

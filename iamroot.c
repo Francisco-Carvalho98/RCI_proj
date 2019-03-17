@@ -61,6 +61,8 @@ int main (int argc, char **argv)
     int counter, n, addrlen, newfd=-1, maxfd, clients = 0;
     struct sockaddr_in addr;
     
+
+
     while(1){
 
         //BUILDS READ SET
@@ -99,12 +101,7 @@ int main (int argc, char **argv)
                     ptp_decoder(buffer, &message, 0);}
             }
         }
-
-
-
-
-        
-        
+    
         //checks for downlink connection attempts ------- TCP
         else if(FD_ISSET(stcp_fd, &rfds)){
             addrlen=sizeof(addr);
@@ -122,14 +119,10 @@ int main (int argc, char **argv)
         }
 
         //check for udp access server requests -------- UDP
-        else if(FD_ISSET(sudp_fd,&rfds)){
-
-            printf("Detected traffic to upd access server\n");
+        else if(FD_ISSET(sudp_fd,&rfds)){printf("Detected traffic to upd access server\n");
             addrlen=sizeof(addr);
-            if((n=recvfrom(sudp_fd,buffer,BUFFER_SIZE,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen))==-1){perror("recvfrom access server");exit(1);};
-            
+            if((n=recvfrom(sudp_fd,buffer,BUFFER_SIZE,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen))==-1){perror("recvfrom access server");exit(1);};      
             udp_decoder(buffer, &message);
-
         }
 
         //checks for user input ---- STDIN
@@ -144,8 +137,7 @@ int main (int argc, char **argv)
                 if((n=read(new_fds[i].fd,downlink_buffer,BUFFER_SIZE))!=0){
                     if(n==-1){perror("downlink - read()");exit(1);}
                     ptp_decoder(downlink_buffer, &downlink_message, new_fds[i].fd);
-                }else{
-                    printf("Detected a connection failure, closing...\n");
+                }else{printf("Detected a connection failure, closing...\n");
                     close(new_fds[i].fd); 
                     clients--;
                     Array_Rem(new_fds, new_fds[i].fd);
@@ -205,7 +197,6 @@ int main (int argc, char **argv)
             if(input.debug)printf("Closing ctcp: %d\n", ctcp_fd);
             close(ctcp_fd);
             ctcp_fd = tcp_client(message.address);
-           
         }
 
         if (node.ptp.SF){node.ptp.SF = false;
@@ -238,9 +229,16 @@ int main (int argc, char **argv)
         }
 
         if (node.user.exit_){node.user.exit_ = false;
+            for (int i = 0; i < input.tcpsessions; i++) if (new_fds[i].fd != -1) close(new_fds[i].fd);
             free(new_fds);
-            close(ctcp_fd);
-            exit(0);
+            close(ctcp_fd);close(stcp_fd);
+            if(is_root){
+                close(sudp_fd);
+                udp_encoder("REMOVE", buffer, (struct ipport *)NULL);
+                udp_client(1, buffer, input.rs_id);
+            }
+            printf("Exiting...\n");
+            exit(0); 
             //TODO
         }
 

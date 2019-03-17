@@ -52,6 +52,7 @@ int udp_server (){
     n=bind(fd,res->ai_addr,res->ai_addrlen);
     if(n==-1){perror("udp_server bind()");exit(1);}
 
+    freeaddrinfo(res);
     if(input.debug)printf("sudp socket created - %d\n", fd);
     return fd;
 }
