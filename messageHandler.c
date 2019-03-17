@@ -106,6 +106,8 @@ void ptp_decoder (char *message, struct message *decoded, int key){
     sscanf(message, "%s %s", command, args[0]);
     if (!strcasecmp(command, "DA")){node.ptp.DA = true;return;}
     else if (!strcasecmp(command, "TR")){node.ptp.TR = true;return;}
+    else if(!strcasecmp(command, "SF")){node.ptp.SF = true;return;}
+    else if(!strcasecmp(command, "BS")){node.ptp.BS = true;return;}
     //else{printf("Unexpected error ptp_decoder\n");exit(EXIT_FAILURE);}
 
     //catches PR
@@ -123,7 +125,7 @@ void ptp_decoder (char *message, struct message *decoded, int key){
                 if (!strcasecmp(input.stream_id.name, args[1]) && !strcasecmp(input.stream_id.ip, args[2]) 
                                                                && !strcasecmp(input.stream_id.port, args[3])){
                     if(input.debug)printf("Connected to desired stream\n");
-                }else{printf("Didnt connect to desired stream\n");exit(1);}
+                }else{printf("Connected to wrong stream, exiting...\n");exit(1);}
         }
         else if(!strcasecmp(command, "RE")){node.ptp.RE = true;
             sscanf(args[0], "%[^:]%*[:]%s", decoded->address.ip, decoded->address.port);
@@ -131,7 +133,8 @@ void ptp_decoder (char *message, struct message *decoded, int key){
         else if(!strcasecmp(command, "NP")){node.ptp.NP = true;
             sscanf(args[0], "%[^:]%*[:]%s", decoded->address.ip, decoded->address.port);
             Array_Addipport(new_fds, key, decoded->address);
+            if(input.SF) write(key, "SF\n", 3);
+            else write(key, "BS\n", 3);
         }
     }
-    //TODO SF, BS
 }

@@ -160,7 +160,7 @@ int main (int argc, char **argv)
 
         /*
         *
-        * START OF FLAG CHECKING. THIS MEANS THE MESSAGE ASSOCIATED WITH THE FLAG NAME WAS RECEIVED
+        * START OF FLAG CHECKING. FLAG==TRUE MEANS THE MESSAGE ASSOCIATED WITH THE FLAG NAME WAS RECEIVED
         * 
         */ 
 
@@ -169,14 +169,14 @@ int main (int argc, char **argv)
         * 
         */ 
         if (node.ptp.WE){node.ptp.WE = false;
-            if(input.debug)printf("WE detected\n%s", buffer);
+            if(input.debug)printf("WE detected\n");
             ptp_encoder("NP", buffer, 0);
             write(ctcp_fd, buffer, strlen(buffer));
-            //TODO
-            //Check if stream is the desired one
+            //CHECKS TO SEE IF STREAM IS THE DESIRED ONE DONE IN ptp_decoder
         }
 
         if (node.ptp.BS){node.ptp.BS = false;
+            if(input.debug)printf("BS detected\n");
             input.SF = false;
             send_downstream(&clients, "BS\n");
         }
@@ -209,6 +209,7 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.SF){node.ptp.SF = false;
+            if(input.debug)printf("SF detected\n");
             input.SF = true;
             send_downstream(&clients, "SF\n");
         }
