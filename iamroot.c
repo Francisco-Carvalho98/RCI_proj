@@ -21,19 +21,9 @@ int main (int argc, char **argv)
     
     if (node.udp.URROOT){node.udp.URROOT = false;is_root=true;//APLICATION IS ROOT
 
-        //connects to stream source
-        ctcp_fd = tcp_client(message.address); //printf("Connected to stream source on socket: %d\n", ctcp_fd);
-
-        //initializes udp access server
-        sudp_fd = udp_server(); //printf("udp access server created on socket %d\n", sudp_fd);
-
-        //initializes tcp downlink server
-        stcp_fd = tcp_server(); //printf("tcp root downlink server created on socket %d\n", stcp_fd);
-
-        //adds point of presence to pop array
+        //adds pop to pop array
         strcpy(pop[0].ipport.ip, input.ipaddr);
         strcpy(pop[0].ipport.port, input.tport);
-
 
     }else if (node.udp.ROOTIS){node.udp.ROOTIS = false;is_root=false;//APLICATION IS NOT ROOT
 
@@ -44,18 +34,17 @@ int main (int argc, char **argv)
 
         //decode POPRESP received message
         udp_decoder(buffer, &message); 
-        
-        //connects to tree entry point
-        ctcp_fd = tcp_client(message.address);if(input.debug)printf("Connected to point of presence\n");
-
-        //udp access server only needed if root
-        sudp_fd = -1;
-
-        //initializes tcp downlink server
-        stcp_fd = tcp_server();if(input.debug)printf("tcp downlink server created on socket %d\n", stcp_fd);
-        
 
     }else{printf("Unexpected error - iamroot\n");exit(EXIT_FAILURE);}
+
+    //connects to stream source
+    ctcp_fd = tcp_client(message.address); //printf("Connected to stream source on socket: %d\n", ctcp_fd);
+
+    //initializes udp access server
+    sudp_fd = udp_server(); //printf("udp access server created on socket %d\n", sudp_fd);
+
+    //initializes tcp downlink server
+    stcp_fd = tcp_server(); //printf("tcp root downlink server created on socket %d\n", stcp_fd);
 
     fd_set rfds;
     int counter, n, addrlen, newfd=-1, maxfd, clients = 0;
@@ -235,18 +224,16 @@ int main (int argc, char **argv)
             //TODO
         }
 
-        if (node.user.exit_){node.user.exit_ = false;
-            for (int i = 0; i < input.tcpsessions; i++) if (new_fds[i].fd != -1) close(new_fds[i].fd);
-            free(new_fds);
-            close(ctcp_fd);close(stcp_fd);
+        if (node.user.exit_){node.user.exit_ = false; 
             if(is_root){
-                close(sudp_fd);
                 udp_encoder("REMOVE", buffer, (struct ipport *)NULL);
                 udp_client(1, buffer, input.rs_id);
             }
+            close(ctcp_fd);close(stcp_fd);close(sudp_fd);
+            for (int i = 0; i < input.tcpsessions; i++) if (new_fds[i].fd != -1) close(new_fds[i].fd);
+            free(new_fds);
             printf("Exiting...\n");
             exit(0); 
-            //TODO
         }
 
         if (node.user.format){node.user.format = false;
@@ -293,32 +280,18 @@ int main (int argc, char **argv)
             //TODO
         }
 
-        if (node.udp.REMOVE){
-            //TODO
-        }
-
         if (node.udp.ROOTIS){node.udp.ROOTIS = false;
-            memset(buffer, '\0', strlen(buffer));
-            strcpy(buffer, "POPREQ\n"); //printf("Sending: %s to %s:%s\n",buffer, message.address.adress, message.address.port);
-            udp_client(0, buffer, message.address);//send it
-
-            //decode POPRESP received message
+            strcpy(buffer, "POPREQ\n"); 
+            udp_client(0, buffer, message.address);
             udp_decoder(buffer, &message); 
-            
-            //connects to tree entry point
             ctcp_fd = tcp_client(message.address);if(input.debug)printf("Connected to point of presence\n");
         }
 
-        if (node.udp.STREAMS){
-            //TODO
-        }
-
-        if (node.udp.URROOT){
-            //TODO
-        }
-
-        if (node.udp.WHOISROOT){
-            //TODO
+        if (node.udp.URROOT){node.udp.URROOT = false;is_root = true;
+            ctcp_fd = tcp_client(message.address); 
+            strcpy(pop[0].ipport.ip, input.ipaddr);
+            strcpy(pop[0].ipport.port, input.tport);
+            send_downstream(&clients, "SF\n");
         }
 
         /*

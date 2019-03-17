@@ -27,7 +27,8 @@ void udp_client (int key, char *buffer, struct ipport ipport){
     if (key!=1)
         if((n=recvfrom(fd,buffer,BUFFER_SIZE,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen))==-1)
         {perror("udp_client recvfrom()");exit(1);}
-      
+    
+    printf("UDP --> %s", buffer);
     close(fd);if(input.debug)printf("cudp socket closing %d\n", fd);
 
     return;

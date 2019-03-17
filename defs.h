@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netdb.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <string.h>
@@ -13,6 +12,7 @@
 #include <sys/select.h>
 #include <stdbool.h>
 #include <time.h>
+#include <netdb.h>
 
 #define BUFFER_SIZE 512
 
