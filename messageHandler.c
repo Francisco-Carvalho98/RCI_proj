@@ -100,7 +100,7 @@ void ptp_encoder(char * command, char * data, int size){
 void ptp_decoder (char *message, struct message *decoded, int key){
 
     char command[10];
-    char args[3][60];
+    char args[4][60];
 
     //catches DA, TR
     sscanf(message, "%s %s", command, args[0]);
@@ -116,9 +116,14 @@ void ptp_decoder (char *message, struct message *decoded, int key){
     
     //catches WE, NP, RE, TQ
     if(sscanf(message, "%s %s", command, args[0]) == 2){
-        printf("uh\n");
         if(!strcasecmp(command, "WE")){node.ptp.WE = true;
-            
+                sscanf(args[0], "%[^:]%*[:]%[^:]%*[:]%s", args[1], args[2], args[3]);
+                printf("uh %s %s %s\n", args[1], args[2], args[0]);
+                printf("bruh %s %s %s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
+                if (!strcasecmp(input.stream_id.name, args[1]) && !strcasecmp(input.stream_id.ip, args[2]) 
+                                                               && !strcasecmp(input.stream_id.port, args[3])){
+                    if(input.debug)printf("Connected to desired stream\n");
+                }else{printf("Didnt connect to desired stream\n");exit(1);}
         }
         else if(!strcasecmp(command, "RE")){node.ptp.RE = true;
             sscanf(args[0], "%[^:]%*[:]%s", decoded->address.ip, decoded->address.port);
@@ -128,6 +133,5 @@ void ptp_decoder (char *message, struct message *decoded, int key){
             Array_Addipport(new_fds, key, decoded->address);
         }
     }
-    printf("wut %s\n", command);
     //TODO SF, BS
 }

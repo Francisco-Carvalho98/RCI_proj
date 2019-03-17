@@ -99,6 +99,11 @@ int main (int argc, char **argv)
                     ptp_decoder(buffer, &message, 0);}
             }
         }
+
+
+
+
+        
         
         //checks for downlink connection attempts ------- TCP
         else if(FD_ISSET(stcp_fd, &rfds)){
@@ -121,9 +126,8 @@ int main (int argc, char **argv)
 
             printf("Detected traffic to upd access server\n");
             addrlen=sizeof(addr);
-            n=recvfrom(sudp_fd,buffer,BUFFER_SIZE,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen);
-            if(n==-1)/*error*/exit(1);
-
+            if((n=recvfrom(sudp_fd,buffer,BUFFER_SIZE,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen))==-1){perror("recvfrom access server");exit(1);};
+            
             udp_decoder(buffer, &message);
 
         }
@@ -139,8 +143,6 @@ int main (int argc, char **argv)
             if (FD_ISSET(new_fds[i].fd, &rfds)){
                 if((n=read(new_fds[i].fd,downlink_buffer,BUFFER_SIZE))!=0){
                     if(n==-1){perror("downlink - read()");exit(1);}
-                    write(1, downlink_buffer, n);
-                    printf("\n");
                     ptp_decoder(downlink_buffer, &downlink_message, new_fds[i].fd);
                 }else{
                     printf("Detected a connection failure, closing...\n");
@@ -185,7 +187,7 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.NP){node.ptp.NP = false;
-            if(input.debug)printf("NP detected\n%s", buffer);
+            if(input.debug)printf("NP detected\n");
             //DONE IN ptp_decoder FOR NOW
         }
 
@@ -198,11 +200,12 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.RE){node.ptp.RE = false;
+            sleep(2);
             if(input.debug)printf("RE detected\n%s", buffer);
             if(input.debug)printf("Closing ctcp: %d\n", ctcp_fd);
             close(ctcp_fd);
             ctcp_fd = tcp_client(message.address);
-            sleep(3);
+           
         }
 
         if (node.ptp.SF){node.ptp.SF = false;
