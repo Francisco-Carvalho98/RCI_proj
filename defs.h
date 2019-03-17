@@ -82,6 +82,7 @@ struct input{
     bool debug;
     bool help;
     bool SF;
+    bool format;
 };
 
 struct message{

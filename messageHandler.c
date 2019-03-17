@@ -72,10 +72,19 @@ void user_decoder (char * message){
     char args[10];
     sscanf(message, "%s %s", command, args);
     if (!strcasecmp(command, "streams")) node.user.streams = true;
-    else if (!strcasecmp(command, "debug")) node.user.debug = true;
-    else if (!strcasecmp(command, "display")) node.user.display = true;
+    else if (!strcasecmp(command, "debug")){
+        if (!strcasecmp(args, "on")) input.debug = true;
+        else if (!strcasecmp(args, "off")) input.debug = false;
+        else printf("Invalid command argument\n");}
+    else if (!strcasecmp(command, "display")){
+        if (!strcasecmp(args, "on")) input.display = true;
+        else if (!strcasecmp(args, "off")) input.display = false;
+        else printf("Invalid command argument\n");}
     else if (!strcasecmp(command, "exit")) node.user.exit_ = true;
-    else if (!strcasecmp(command, "format")) node.user.format = true;
+    else if (!strcasecmp(command, "format")){
+        if (!strcasecmp(args, "ascii")) input.format = true;
+        else if (!strcasecmp(args, "hex")) input.format = false;
+        else printf("Invalid command argument\n");}
     else if (!strcasecmp(command, "status")) node.user.status = true;
     else if (!strcasecmp(command, "tree")) node.user.tree = true;
     else printf("Invalid command\n");

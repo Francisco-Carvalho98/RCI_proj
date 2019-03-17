@@ -50,7 +50,7 @@ int main (int argc, char **argv)
     int counter, n, addrlen, newfd=-1, maxfd, clients = 0;
     struct sockaddr_in addr;
     struct timeval timeout;
-    
+
     time_t start = time(NULL);
 
     while(1){
@@ -221,11 +221,11 @@ int main (int argc, char **argv)
         * 
         */ 
         if (node.user.debug){node.user.debug = false;
-            //TODO
+             //DONE IN user_decode FOR NOW
         }
 
         if (node.user.display){node.user.display = false;
-            //TODO
+             //DONE IN user_decode FOR NOW
         }
 
         if (node.user.exit_){node.user.exit_ = false; 
@@ -241,7 +241,7 @@ int main (int argc, char **argv)
         }
 
         if (node.user.format){node.user.format = false;
-            //TODO
+            //DONE IN user_decode FOR NOW
         }
 
         if (node.user.status){node.user.status = false;
@@ -265,10 +265,6 @@ int main (int argc, char **argv)
         *   UDP related flags
         * 
         */ 
-        if (node.udp.DUMP){
-            //TODO
-        }
-
         if (node.udp.ERROR){
             //TODO
         }
