@@ -3,7 +3,7 @@
 int main (int argc, char **argv)
 {
     char buffer[BUFFER_SIZE], downlink_buffer[BUFFER_SIZE];
-    memset(&pop, 0, sizeof pop);
+    memset(&pop, 0, sizeof pop);memset(buffer, '\0', BUFFER_SIZE);memset(downlink_buffer, '\0', BUFFER_SIZE);
     struct message message; 
     struct message downlink_message;
     int ctcp_fd, sudp_fd, stcp_fd;
@@ -60,8 +60,7 @@ int main (int argc, char **argv)
     fd_set rfds;
     int counter, n, addrlen, newfd=-1, maxfd, clients = 0;
     struct sockaddr_in addr;
-    
-
+    struct timeval timeout;
 
     while(1){
 
@@ -74,15 +73,18 @@ int main (int argc, char **argv)
         for (int i = 0; i < input.tcpsessions; i++) if(new_fds[i].fd!=-1) FD_SET(new_fds[i].fd, &rfds);
 
         //Clears buffers for the next cicle
-        memset(buffer, '\0', strlen(buffer));
+        memset(buffer, '\0', BUFFER_SIZE);
         memset(&message, '\0', sizeof message);
         memset(&message, '\0', sizeof downlink_message);
 
+        timeout.tv_sec = input.tsecs - 1;
+        timeout.tv_usec = 0;
         //GETS THE BIGGEST FD 
         if(!(maxfd=Array_Max(new_fds))) maxfd = stcp_fd;
 
-        counter=select(maxfd+1,&rfds,(fd_set*)NULL,(fd_set*)NULL, (struct timeval *)NULL);
+        counter=select(maxfd+1,&rfds,(fd_set*)NULL,(fd_set*)NULL, &timeout);
         if(counter<=0){perror("select()"); exit(1);}
+
 
         /*
         *
@@ -99,9 +101,15 @@ int main (int argc, char **argv)
                     input.SF = true;
                 }else{//printf("Detected traffic from uplink connection\n");
                     ptp_decoder(buffer, &message, 0);}
+            }else{if(input.debug)printf("Uplink connection failure\n");
+                close(ctcp_fd);ctcp_fd = -1;
+                send_downstream(&clients, "BS\n");
+                udp_encoder("WHOISROOT", buffer, (struct ipport *)NULL); //builds WHOISROOT protocol message
+                udp_client(0, buffer, input.rs_id); //sends the built message
+                udp_decoder(buffer, &message); //decodes received message
             }
         }
-    
+
         //checks for downlink connection attempts ------- TCP
         else if(FD_ISSET(stcp_fd, &rfds)){
             addrlen=sizeof(addr);
@@ -192,7 +200,6 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.RE){node.ptp.RE = false;
-            sleep(2);
             if(input.debug)printf("RE detected\n%s", buffer);
             if(input.debug)printf("Closing ctcp: %d\n", ctcp_fd);
             close(ctcp_fd);
@@ -290,8 +297,16 @@ int main (int argc, char **argv)
             //TODO
         }
 
-        if (node.udp.ROOTIS){
-            //TODO
+        if (node.udp.ROOTIS){node.udp.ROOTIS = false;
+            memset(buffer, '\0', strlen(buffer));
+            strcpy(buffer, "POPREQ\n"); //printf("Sending: %s to %s:%s\n",buffer, message.address.adress, message.address.port);
+            udp_client(0, buffer, message.address);//send it
+
+            //decode POPRESP received message
+            udp_decoder(buffer, &message); 
+            
+            //connects to tree entry point
+            ctcp_fd = tcp_client(message.address);if(input.debug)printf("Connected to point of presence\n");
         }
 
         if (node.udp.STREAMS){

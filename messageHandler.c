@@ -93,7 +93,6 @@ void ptp_encoder(char * command, char * data, int size){
                                                                       , new_fds[0].ipport.port);
     else{printf("Unexpected error - ptp_encoder\n");exit(EXIT_FAILURE);}
 
-
     strcpy(data, message);
 }
 
@@ -122,7 +121,8 @@ void ptp_decoder (char *message, struct message *decoded, int key){
                 sscanf(args[0], "%[^:]%*[:]%[^:]%*[:]%s", args[1], args[2], args[3]);
                 if (!strcasecmp(input.stream_id.name, args[1]) && !strcasecmp(input.stream_id.ip, args[2]) 
                                                                && !strcasecmp(input.stream_id.port, args[3])){
-                    if(input.debug)printf("Connected to desired stream\n");return;
+                    if(input.debug)printf("Connected to desired stream\n");
+                    return;
                 }else{printf("Connected to wrong stream, exiting...\n");exit(1);}
         }
         else if(!strcasecmp(command, "RE")){node.ptp.RE = true;

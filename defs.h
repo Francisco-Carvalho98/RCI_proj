@@ -75,9 +75,9 @@ struct input{
     char tport[63]; //self tcp port (downlink server)
     char uport[63]; //self udp port (access server)
     struct ipport rs_id; //root server ip and port
-    int tcpsessions; //tcp session to provide
-    int bestpops; //number of access points to keep
-    char tsecs[63]; //root update time
+    unsigned int tcpsessions; //tcp session to provide
+    unsigned int bestpops; //number of access points to keep
+    unsigned int tsecs; //root update time
     bool display; 
     bool debug;
     bool help;

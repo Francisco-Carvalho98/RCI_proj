@@ -18,7 +18,7 @@ void inputHandler (char **argv, int argc){
     strcpy(input.rs_id.port,"59000");
     input.tcpsessions = 1;
     input.bestpops = 1;
-    strcpy(input.tsecs,"5");
+    input.tsecs = 5;
     input.display = true;
     input.debug = true;
     input.help = false;
@@ -43,7 +43,7 @@ void inputHandler (char **argv, int argc){
             strcpy(input.rs_id.port,token);}
         if (strcasecmp(argv[i],"-p") == 0) input.tcpsessions = atoi(argv[++i]);
         if (strcasecmp(argv[i],"-n") == 0) input.bestpops = atoi(argv[++i]);
-        if (strcasecmp(argv[i],"-x") == 0) strcpy(input.tsecs,argv[++i]);
+        if (strcasecmp(argv[i],"-x") == 0) input.tsecs = atoi(argv[++i]);
         if (strcasecmp(argv[i],"-b") == 0) input.display = false;
         if (strcasecmp(argv[i],"-d") == 0) input.debug = true;
         if (strcasecmp(argv[i],"-h") == 0) input.help = true;
@@ -81,7 +81,7 @@ void print_input(){
     printf("StreamID: %s:%s:%s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
     printf("Self IP, TCP and UDP ports: %s - %s - %s\n", input.ipaddr, input.tport, input.uport);
     printf("Root Server: %s:%s\n", input.rs_id.ip, input.rs_id.port);
-    printf("Application variables: %d (sessions) - %d (bestp) - %s (tsecs)\n", input.tcpsessions, input.bestpops, input.tsecs);
+    printf("Application variables: %d (sessions) - %d (bestp) - %d (tsecs)\n", input.tcpsessions, input.bestpops, input.tsecs);
     printf("Flags: %d %d %d\n", input.display, input.debug, input.help);
     return;
 }
