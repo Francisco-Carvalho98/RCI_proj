@@ -91,7 +91,7 @@ struct message{
     struct ipport address; //used for tcp_client
 };
 
-struct access_point {
+struct pop {
     struct ipport ipport;
     int key;
 };
@@ -108,6 +108,7 @@ int Array_Rem (struct client*, int);
 int Array_Addipport (struct client *, int, struct ipport);
 void send_downstream (int *, char *);
 void print_status(int);
+void print_hex(const char *);
 
 //inputHandler.c
 void inputHandler (char **, int);
@@ -130,7 +131,7 @@ void ptp_decoder (char*, struct message *, int);
 void user_decoder (char*);
 
 //global vars declaration
-struct access_point pop[10];
+struct pop *pop;
 struct input input;
 struct application node;
 struct client *new_fds;

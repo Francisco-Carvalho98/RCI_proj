@@ -2,25 +2,28 @@
 
 int main (int argc, char **argv)
 {
-    char buffer[BUFFER_SIZE], downlink_buffer[BUFFER_SIZE];
-    memset(&pop, 0, sizeof pop);memset(buffer, '\0', BUFFER_SIZE);memset(downlink_buffer, '\0', BUFFER_SIZE);
-    struct message message; 
-    struct message downlink_message;
+    char buffer[BUFFER_SIZE], downlink_buffer[BUFFER_SIZE], *token;
+    memset(buffer, '\0', BUFFER_SIZE);memset(downlink_buffer, '\0', BUFFER_SIZE);
+    struct message message, downlink_message;
     int ctcp_fd, sudp_fd, stcp_fd;
     
     //takes care of program input args or sets to default if not specified
     inputHandler(argv, argc);
 
-    //allocs client struct to the number of tcpsessions supported by node
+    //allocs client struct vector to the number of tcpsessions supported by node
     new_fds = (struct client*)calloc(input.tcpsessions, sizeof(struct client));
     for (int i = 0; i < input.tcpsessions; i++) new_fds[i].fd =-1;
+
+    //allocs pop struct vector to the number of bestpops
+    pop = (struct pop*)calloc(input.bestpops, sizeof(struct pop));
+    for (int i = 0; i < input.bestpops; i++) pop[i].key =-1;
 
     udp_encoder("WHOISROOT", buffer, (struct ipport *)NULL); //builds WHOISROOT protocol message
     udp_client(0, buffer, input.rs_id); //sends the built message
     udp_decoder(buffer, &message); //decodes received message
     
     if (node.udp.URROOT){node.udp.URROOT = false;is_root=true;//APLICATION IS ROOT
-
+  
         //adds pop to pop array
         strcpy(pop[0].ipport.ip, input.ipaddr);
         strcpy(pop[0].ipport.port, input.tport);
@@ -72,7 +75,7 @@ int main (int argc, char **argv)
         for (int i = 0; i < input.tcpsessions; i++) if(new_fds[i].fd!=-1) FD_SET(new_fds[i].fd, &rfds);
 
         //Clears buffers for the next cicle
-        memset(buffer, '\0', BUFFER_SIZE);
+        memset(buffer, '\0', BUFFER_SIZE);memset(downlink_buffer, '\0', BUFFER_SIZE);
         memset(&message, '\0', sizeof message);
         memset(&message, '\0', sizeof downlink_message);
 
@@ -89,7 +92,7 @@ int main (int argc, char **argv)
 
         /*
         *
-        * START OF THE READ SET CHECKS
+        * START OF READ SET CHECKS
         * 
         */
 
@@ -99,9 +102,8 @@ int main (int argc, char **argv)
                 if(is_root){if(input.debug)printf("Detected traffic from stream source\n");
                     ptp_encoder("DA", buffer, n);
                     send_downstream(&clients, buffer); 
-                    input.SF = true;
-                }else{
-                    ptp_decoder(buffer, &message, 0);}
+                    input.SF = true;node.ptp.DA = true;
+                }else ptp_decoder(buffer, &message, 0);
             }else{if(input.debug)printf("Uplink connection failure\n");
                 close(ctcp_fd);ctcp_fd = -1;
                 send_downstream(&clients, "BS\n");
@@ -184,7 +186,11 @@ int main (int argc, char **argv)
 
         if (node.ptp.DA){node.ptp.DA = false;
             if(input.debug)printf("DA detected\n");
-            send_downstream(&clients, buffer);
+            token = &buffer[0]; token += 8; 
+            if(input.display){ 
+                if(input.format) printf("%s\n", token);
+                else print_hex(buffer);}
+            send_downstream(&clients, token);
         }
 
         if (node.ptp.NP){node.ptp.NP = false;
@@ -243,7 +249,7 @@ int main (int argc, char **argv)
             }
             close(ctcp_fd);close(stcp_fd);close(sudp_fd);
             for (int i = 0; i < input.tcpsessions; i++) if (new_fds[i].fd != -1) close(new_fds[i].fd);
-            free(new_fds);
+            free(new_fds);free(pop);
             printf("Exiting...\n");
             exit(0); 
         }
@@ -312,7 +318,7 @@ int main (int argc, char **argv)
         if(is_root)
             if (time(NULL) - start >= input.tsecs){
                 start = time(NULL);
-                printf("Elapsed 5 seconds\n");
+                if(input.debug)printf("Elapsed 5 seconds\n");
                 udp_encoder("WHOISROOT", buffer, (struct ipport *)NULL); //builds WHOISROOT protocol message
                 udp_client(0, buffer, input.rs_id);
             }
@@ -367,4 +373,9 @@ void print_status (int clients){
     printf("Supported sessions: %d - Occupied: %d\n", input.tcpsessions, clients);
     printf("Connected pairs:\n");
     for (int i = 0; i < input.tcpsessions; i++) if(new_fds[i].fd != -1) printf("%s:%s\n", new_fds[i].ipport.ip, new_fds[i].ipport.port);
+}
+
+void print_hex(const char *s){
+    while(*s) printf("%02X ", (unsigned int) *s++);
+    printf("\n\n");
 }

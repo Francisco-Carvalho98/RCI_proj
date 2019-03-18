@@ -29,7 +29,7 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
         if (!strcasecmp(decoded->command, "ROOTIS")) node.udp.ROOTIS = true;
         else if (!strcasecmp(decoded->command, "POPRESP")) node.udp.POPRESP = true;
         else if (!strcasecmp(decoded->command, "STREAMS")){
-            message += 8;//skips STREAMS\n
+            message += 8;//skips "STREAMS\n"
             printf("Streams:\n");
             printf("%s", message);
             return;
@@ -112,7 +112,9 @@ void ptp_decoder (char *message, struct message *decoded, int key){
     if(sscanf(message, "%s %s %s %s", command, args[0], args[1], args[2]) == 4);
 
     //catches PQ
-    if(sscanf(message, "%s %s %s", command, args[0], args[1]) == 3);
+    if(sscanf(message, "%s %s %s", command, decoded->args[0], decoded->args[1]) == 3){
+        if (!strcasecmp(command, "PQ"))node.ptp.PQ = true;       
+        else{printf("Bad ptp message format\n");exit(1);}} 
     
     //catches WE, NP, RE, TQ
     if(sscanf(message, "%s %s", command, args[0]) == 2){
