@@ -114,8 +114,8 @@ void ptp_decoder (char *message, struct message *decoded, int key){
 
     //catches PQ
     if(sscanf(message, "%s %s %s", command, decoded->args[0], decoded->args[1]) == 3){
-        if (!strcasecmp(command, "PQ"))node.ptp.PQ = true;       
-        else{printf("Bad ptp message format %s\n", command);exit(1);}} 
+        if (!strcasecmp(command, "PQ")){node.ptp.PQ = true;return;}       
+        else{printf("uh\n"); printf("Bad ptp message format %s\n", command);exit(1);}} 
     
     //catches WE, NP, RE, TQ
     if(sscanf(message, "%s %s", command, args[0]) == 2){
@@ -135,6 +135,5 @@ void ptp_decoder (char *message, struct message *decoded, int key){
             Array_Addipport(new_fds, key, decoded->address);
             if(input.SF) write(key, "SF\n", 3);
             else write(key, "BS\n", 3);
-        }
-    }
+        }else{printf("Bad ptp message format %s\n", command);exit(1);}}
 }

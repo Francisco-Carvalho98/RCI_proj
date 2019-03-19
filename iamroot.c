@@ -59,7 +59,8 @@ int main (int argc, char **argv)
     strcpy(new_fds[0].ipport.port, input.tport);
 
     fd_set rfds;
-    int counter, n, addrlen, newfd=-1, maxfd, clients = 0, pop_tracker = 0, query_num = 0;
+    int counter, n, addrlen, newfd=-1, maxfd, clients = 0, pop_tracker = 0;
+    unsigned short query_num = 0;
     char query_hex[5];
     struct sockaddr_in addr;
     struct timeval timeout;
@@ -299,18 +300,13 @@ int main (int argc, char **argv)
                 memset(buffer, '\0', strlen(buffer));
                 sprintf(buffer, "%04X", query_num);
                 ptp_encoder("PQ", buffer, input.bestpops);
+                printf("buffer - %s\n", buffer);
                 send_downstream(&clients, buffer);
                 query_num++;
             }
 
             if (pop_tracker+1 >= input.bestpops || pop[pop_tracker+1].key == -1) pop_tracker = 0; 
             else pop_tracker++;
-
-            
-            
-
-            
-            
         }
 
         if (node.udp.POPRESP){
@@ -328,6 +324,7 @@ int main (int argc, char **argv)
             ctcp_fd = tcp_client(message.address); 
             strcpy(pop[0].ipport.ip, input.ipaddr);
             strcpy(pop[0].ipport.port, input.tport);
+            pop[0].key = 0;
             send_downstream(&clients, "SF\n");
         }
 

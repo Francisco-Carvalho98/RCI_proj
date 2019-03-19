@@ -19,7 +19,7 @@ void inputHandler (char **argv, int argc){
     input.bestpops = 1;
     input.tsecs = 5;
     input.display = false;
-    input.debug = false;
+    input.debug = true;
     input.help = false;
     input.SF = false;
     input.format = true;
