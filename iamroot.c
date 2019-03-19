@@ -27,6 +27,7 @@ int main (int argc, char **argv)
         //adds pop to pop array
         strcpy(pop[0].ipport.ip, input.ipaddr);
         strcpy(pop[0].ipport.port, input.tport);
+        pop[0].key = 0;
 
     }else if (node.udp.ROOTIS){node.udp.ROOTIS = false;is_root=false;//APLICATION IS NOT ROOT
 
@@ -58,7 +59,8 @@ int main (int argc, char **argv)
     strcpy(new_fds[0].ipport.port, input.tport);
 
     fd_set rfds;
-    int counter, n, addrlen, newfd=-1, maxfd, clients = 0;
+    int counter, n, addrlen, newfd=-1, maxfd, clients = 0, pop_tracker = 0, query_num = 0;
+    char query_hex[5];
     struct sockaddr_in addr;
     struct timeval timeout;
 
@@ -189,8 +191,8 @@ int main (int argc, char **argv)
             token = &buffer[0]; token += 8; 
             if(input.display){ 
                 if(input.format) printf("%s\n", token);
-                else print_hex(buffer);}
-            send_downstream(&clients, token);
+                else print_hex(token);}
+            send_downstream(&clients, buffer);
         }
 
         if (node.ptp.NP){node.ptp.NP = false;
@@ -199,6 +201,7 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.PQ){node.ptp.PQ = false;
+            if(input.debug)printf("PQ detected --> %s\n", buffer);
             //TODO
         }
 
@@ -286,8 +289,28 @@ int main (int argc, char **argv)
         if (node.udp.POPREQ){node.udp.POPREQ = false; 
             printf("POPREQ detected\n");
             memset(buffer, '\0', strlen(buffer));
-            udp_encoder("POPRESP", buffer, &(pop[0].ipport));
+            udp_encoder("POPRESP", buffer, &(pop[pop_tracker].ipport));
             if((n=sendto(sudp_fd,buffer,strlen(buffer),0,(struct sockaddr*)&addr,addrlen))==-1){perror("udp_popreq - sendto\n");exit(1);}
+            pop[pop_tracker].key++;
+            printf("bruh - %d\n",pop[pop_tracker].key);
+
+            //LOGIC TO KNOW WHEN TO CALL A POP QUERY
+            if (pop[pop_tracker].key == 3){
+                memset(buffer, '\0', strlen(buffer));
+                sprintf(buffer, "%04X", query_num);
+                ptp_encoder("PQ", buffer, input.bestpops);
+                send_downstream(&clients, buffer);
+                query_num++;
+            }
+
+            if (pop_tracker+1 >= input.bestpops || pop[pop_tracker+1].key == -1) pop_tracker = 0; 
+            else pop_tracker++;
+
+            
+            
+
+            
+            
         }
 
         if (node.udp.POPRESP){

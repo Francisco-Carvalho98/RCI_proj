@@ -90,6 +90,7 @@ void ptp_encoder(char * command, char * data, int size){
                                                                          , input.stream_id.port);
     else if (!strcasecmp(command, "RE")) sprintf(message, "RE %s:%s\n", new_fds[0].ipport.ip
                                                                       , new_fds[0].ipport.port);
+    else if (!strcasecmp(command, "PQ")) sprintf(message, "PQ %s %d\n",data ,size);
     else{printf("Unexpected error - ptp_encoder\n");exit(EXIT_FAILURE);}
 
     strcpy(data, message);
@@ -114,7 +115,7 @@ void ptp_decoder (char *message, struct message *decoded, int key){
     //catches PQ
     if(sscanf(message, "%s %s %s", command, decoded->args[0], decoded->args[1]) == 3){
         if (!strcasecmp(command, "PQ"))node.ptp.PQ = true;       
-        else{printf("Bad ptp message format\n");exit(1);}} 
+        else{printf("Bad ptp message format %s\n", command);exit(1);}} 
     
     //catches WE, NP, RE, TQ
     if(sscanf(message, "%s %s", command, args[0]) == 2){
