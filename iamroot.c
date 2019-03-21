@@ -60,8 +60,7 @@ int main (int argc, char **argv)
 
     fd_set rfds;
     int counter, n, addrlen, newfd=-1, maxfd, clients = 0, pop_tracker = 0;
-    unsigned short query_num = 0;
-    char query_hex[5];
+    unsigned short query_num = -1;
     struct sockaddr_in addr;
     struct timeval timeout;
 
@@ -203,6 +202,8 @@ int main (int argc, char **argv)
 
         if (node.ptp.PQ){node.ptp.PQ = false;
             if(input.debug)printf("PQ detected --> %s\n", buffer);
+            printf("hmm -> %d - %d\n", message.keys[0], message.keys[1]);
+            //setsockopt
             //TODO
         }
 
@@ -292,17 +293,16 @@ int main (int argc, char **argv)
             memset(buffer, '\0', strlen(buffer));
             udp_encoder("POPRESP", buffer, &(pop[pop_tracker].ipport));
             if((n=sendto(sudp_fd,buffer,strlen(buffer),0,(struct sockaddr*)&addr,addrlen))==-1){perror("udp_popreq - sendto\n");exit(1);}
-            pop[pop_tracker].key++;
-            printf("bruh - %d\n",pop[pop_tracker].key);
+            pop[pop_tracker].key++;//increments counter everytime a pop address is sent on a POPRESP
 
             //LOGIC TO KNOW WHEN TO CALL A POP QUERY
-            if (pop[pop_tracker].key == 3){
-                memset(buffer, '\0', strlen(buffer));
-                sprintf(buffer, "%04X", query_num);
-                ptp_encoder("PQ", buffer, input.bestpops);
-                printf("buffer - %s\n", buffer);
-                send_downstream(&clients, buffer);
-                query_num++;
+            if (pop[pop_tracker].key == 3){//arbitrary decision to send a POP QUERY if a pop has been used 3 times
+                if(input.bestpops + clients - input.tcpsessions > 0){
+                    memset(buffer, '\0', strlen(buffer));
+                    sprintf(buffer, "%04X", ++query_num);
+                    ptp_encoder("PQ", buffer, input.bestpops + clients - input.tcpsessions);
+                    printf("buffer - %s\n", buffer);
+                    send_downstream(&clients, buffer);}
             }
 
             if (pop_tracker+1 >= input.bestpops || pop[pop_tracker+1].key == -1) pop_tracker = 0; 

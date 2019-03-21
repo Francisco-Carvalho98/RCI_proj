@@ -113,7 +113,7 @@ void ptp_decoder (char *message, struct message *decoded, int key){
     if(sscanf(message, "%s %s %s %s", command, args[0], args[1], args[2]) == 4);
 
     //catches PQ
-    if(sscanf(message, "%s %s %s", command, decoded->args[0], decoded->args[1]) == 3){
+    if(sscanf(message, "%s %hX %hd", command, &decoded->keys[0], &decoded->keys[1]) == 3){
         if (!strcasecmp(command, "PQ")){node.ptp.PQ = true;return;}       
         else{printf("uh\n"); printf("Bad ptp message format %s\n", command);exit(1);}} 
     

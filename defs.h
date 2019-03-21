@@ -89,6 +89,7 @@ struct message{
     char command[32];
     char args[2][64];
     struct ipport address; //used for tcp_client
+    unsigned short keys[2]; 
 };
 
 struct pop {
