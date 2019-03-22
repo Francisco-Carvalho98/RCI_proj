@@ -27,7 +27,7 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
     //catches a ROOTIS, POPRESP and non empty STREAM
     if (sscanf(message, "%s %s %s", decoded->command, decoded->args[0], decoded->args[1]) == 3){
         if (!strcasecmp(decoded->command, "ROOTIS")) node.udp.ROOTIS = true;
-        else if (!strcasecmp(decoded->command, "POPRESP")) node.udp.POPRESP = true;
+        else if (!strcasecmp(decoded->command, "POPRESP")); //node.udp.POPRESP = true;
         else if (!strcasecmp(decoded->command, "STREAMS")){
             message += 8;//skips "STREAMS\n"
             printf("Streams:\n");
@@ -81,7 +81,7 @@ void user_decoder (char * message){
     
 }
 
-void ptp_encoder(char * command, char * data, int size){
+void ptp_encoder(char * command, char * data, int size, int Q_id){
     char message[BUFFER_SIZE];
     if (!strcasecmp(command, "DA")) sprintf(message, "DA %.4X\n%s", size, data);
     else if (!strcasecmp(command, "NP")) sprintf(message, "NP %s:%s\n", input.ipaddr, input.tport);
@@ -91,6 +91,7 @@ void ptp_encoder(char * command, char * data, int size){
     else if (!strcasecmp(command, "RE")) sprintf(message, "RE %s:%s\n", new_fds[0].ipport.ip
                                                                       , new_fds[0].ipport.port);
     else if (!strcasecmp(command, "PQ")) sprintf(message, "PQ %s %d\n",data ,size);
+    else if (!strcasecmp(command, "PR")) sprintf(message, "PR %04X %s:%s %d", Q_id, input.ipaddr, input.tport, size);
     else{printf("Unexpected error - ptp_encoder\n");exit(EXIT_FAILURE);}
 
     strcpy(data, message);
@@ -110,7 +111,14 @@ void ptp_decoder (char *message, struct message *decoded, int key){
     //else{printf("Unexpected error ptp_decoder\n");exit(EXIT_FAILURE);}
 
     //catches PR
-    if(sscanf(message, "%s %s %s %s", command, args[0], args[1], args[2]) == 4);
+    if(sscanf(message, "%s %s %s %s", command, args[0], args[1], args[2]) == 4){
+        if (!strcasecmp(command, "PR")){node.ptp.PR = true; 
+            sscanf(message, "%*s %hX %[^:]%*[:]%s %hd", &decoded->keys[0]
+                                                      , decoded->address.ip
+                                                      , decoded->address.port
+                                                      , &decoded->keys[1]);
+            return;}
+        else{printf("uh\n"); printf("Bad ptp message format %s\n", command);exit(1);}}
 
     //catches PQ
     if(sscanf(message, "%s %hX %hd", command, &decoded->keys[0], &decoded->keys[1]) == 3){

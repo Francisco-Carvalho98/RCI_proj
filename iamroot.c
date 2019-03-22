@@ -59,10 +59,11 @@ int main (int argc, char **argv)
     strcpy(new_fds[0].ipport.port, input.tport);
 
     fd_set rfds;
-    int counter, n, addrlen, newfd=-1, maxfd, clients = 0, pop_tracker = 0;
+    int counter, n, addrlen, newfd=-1, maxfd, clients = 0, pop_tracker = 0, bestpops = 0;
     unsigned short query_num = -1;
     struct sockaddr_in addr;
     struct timeval timeout;
+    bool Pquery_active = false, Tquery_active = false;
 
     time_t start = time(NULL);
 
@@ -101,9 +102,8 @@ int main (int argc, char **argv)
         //checks for uplink connection packets ------ TCP 
         if(FD_ISSET(ctcp_fd,&rfds)){
             if((n=read(ctcp_fd,buffer,BUFFER_SIZE))!=0){if(n==-1){ perror("uplink - read()");exit(1);}
-                if(is_root){if(input.debug)printf("Detected traffic from stream source\n");
-                    ptp_encoder("DA", buffer, n);
-                    send_downstream(&clients, buffer); 
+                if(is_root){//if(input.debug)printf("Detected traffic from stream source\n");
+                    ptp_encoder("DA", buffer, n, 0);
                     input.SF = true;node.ptp.DA = true;
                 }else ptp_decoder(buffer, &message, 0);
             }else{if(input.debug)printf("Uplink connection failure\n");
@@ -122,11 +122,11 @@ int main (int argc, char **argv)
 
             if (clients < input.tcpsessions){if(input.debug)printf("Connection established on socket: %d\n", newfd);
                 Array_Add(new_fds,newfd);  
-                ptp_encoder("WE", buffer, 0);
+                ptp_encoder("WE", buffer, 0, 0);
                 write(newfd, buffer, strlen(buffer));if(input.debug)printf("Sending Welcome message\n");
                 clients++;}
             else{if(input.debug)printf("Cant accept more clients, redirecting...\n");
-                ptp_encoder("RE", buffer, 0);
+                ptp_encoder("RE", buffer, 0, 0);
                 write(newfd, buffer, strlen(buffer));
                 close(newfd);}           
         }
@@ -175,7 +175,7 @@ int main (int argc, char **argv)
         */ 
         if (node.ptp.WE){node.ptp.WE = false;
             if(input.debug)printf("WE detected\n");
-            ptp_encoder("NP", buffer, 0);
+            ptp_encoder("NP", buffer, 0, 0);
             write(ctcp_fd, buffer, strlen(buffer));
             //CHECKS TO SEE IF STREAM IS THE DESIRED ONE DONE IN ptp_decoder
         }
@@ -187,9 +187,9 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.DA){node.ptp.DA = false;
-            if(input.debug)printf("DA detected\n");
-            token = &buffer[0]; token += 8; 
+            if(input.debug)printf("DA detected\n");         
             if(input.display){ 
+                token = &buffer[0]; token += 8;
                 if(input.format) printf("%s\n", token);
                 else print_hex(token);}
             send_downstream(&clients, buffer);
@@ -202,12 +202,43 @@ int main (int argc, char **argv)
 
         if (node.ptp.PQ){node.ptp.PQ = false;
             if(input.debug)printf("PQ detected --> %s\n", buffer);
-            printf("hmm -> %d - %d\n", message.keys[0], message.keys[1]);
+            query_num = message.keys[0];
+            bestpops = message.keys[1];
+            if (clients < input.tcpsessions){
+                bestpops--;
+                memset(buffer, '\0', strlen(buffer));
+                ptp_encoder("PR", buffer, input.tcpsessions - clients, query_num);
+                printf("buffer - %s\n", buffer);
+                write(ctcp_fd, buffer, strlen(buffer));
+            }      
+            if (bestpops > 0){
+                memset(buffer, '\0', strlen(buffer));
+                sprintf(buffer, "%04X", query_num);
+                ptp_encoder("PQ", buffer, bestpops, 0);
+                send_downstream(&clients, buffer);
+            }
             //setsockopt
             //TODO
         }
 
         if (node.ptp.PR){node.ptp.PR = false;
+            if(input.debug)printf("PR detected --> %s\n", downlink_buffer);
+            if (is_root){
+                if (Pquery_active){
+                    printf("bpops %d\n", bestpops);
+                    strcpy(pop[input.bestpops - bestpops].ipport.ip, downlink_message.address.ip);
+                    strcpy(pop[input.bestpops - bestpops].ipport.port, downlink_message.address.port);
+                    pop[input.bestpops - bestpops].key = 0;
+                    bestpops--;
+                    for (int i = 0; i < input.bestpops; i++) printf("%s:%s -> %d\n", pop[i].ipport.ip, pop[i].ipport.port, pop[i].key);
+                    if (bestpops == 0) Pquery_active = false;
+                }
+            }else{
+                if (query_num == downlink_message.keys[0] && bestpops > 0){
+                    bestpops--;
+                    write(ctcp_fd, downlink_buffer, strlen(downlink_buffer));
+                }
+            }
             //TODO
         }
 
@@ -296,12 +327,19 @@ int main (int argc, char **argv)
             pop[pop_tracker].key++;//increments counter everytime a pop address is sent on a POPRESP
 
             //LOGIC TO KNOW WHEN TO CALL A POP QUERY
-            if (pop[pop_tracker].key == 3){//arbitrary decision to send a POP QUERY if a pop has been used 3 times
-                if(input.bestpops + clients - input.tcpsessions > 0){
+            if (pop[pop_tracker].key == input.tcpsessions + 1 ){//arbitrary decision to send a POP QUERY if a pop has been used 3 times
+                if (clients < input.tcpsessions){
+                    bestpops = input.bestpops - 1;
+                    strcpy(pop[0].ipport.ip, input.ipaddr);
+                    strcpy(pop[0].ipport.port, input.tport);
+                    pop[0].key = 0;
+                }else bestpops = input.bestpops;
+                if (bestpops > 0){
                     memset(buffer, '\0', strlen(buffer));
                     sprintf(buffer, "%04X", ++query_num);
-                    ptp_encoder("PQ", buffer, input.bestpops + clients - input.tcpsessions);
+                    ptp_encoder("PQ", buffer, bestpops, 0);
                     printf("buffer - %s\n", buffer);
+                    Pquery_active = true;
                     send_downstream(&clients, buffer);}
             }
 

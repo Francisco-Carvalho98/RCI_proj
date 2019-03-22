@@ -29,7 +29,7 @@ void udp_client (int key, char *buffer, struct ipport ipport){
         {perror("udp_client recvfrom()");exit(1);}
     
     printf("UDP --> %s", buffer);
-    close(fd);if(input.debug)printf("cudp socket closing %d\n", fd);
+    close(fd);//if(input.debug)printf("cudp socket closing %d\n", fd);
 
     return;
 } 
@@ -54,6 +54,6 @@ int udp_server (){
     if(n==-1){perror("udp_server bind()");exit(1);}
 
     freeaddrinfo(res);
-    if(input.debug)printf("sudp socket created - %d\n", fd);
+    //if(input.debug)printf("sudp socket created - %d\n", fd);
     return fd;
 }
