@@ -65,7 +65,7 @@ int main (int argc, char **argv)
     struct timeval timeout;
     bool Pquery_active = false, Tquery_active = false;
 
-    time_t start = time(NULL);
+    time_t start = time(NULL), PQ_time = time(NULL), TQ_time = time(NULL);
 
     while(1){
 
@@ -327,7 +327,7 @@ int main (int argc, char **argv)
             pop[pop_tracker].key++;//increments counter everytime a pop address is sent on a POPRESP
 
             //LOGIC TO KNOW WHEN TO CALL A POP QUERY
-            if (pop[pop_tracker].key == input.tcpsessions + 1 ){//arbitrary decision to send a POP QUERY if a pop has been used 3 times
+            if (pop[pop_tracker].key == input.tcpsessions + 1 && !Pquery_active){//arbitrary decision to send a POP QUERY if a pop has been used 3 times
                 if (clients < input.tcpsessions){
                     bestpops = input.bestpops - 1;
                     strcpy(pop[0].ipport.ip, input.ipaddr);
@@ -340,6 +340,7 @@ int main (int argc, char **argv)
                     ptp_encoder("PQ", buffer, bestpops, 0);
                     printf("buffer - %s\n", buffer);
                     Pquery_active = true;
+                    PQ_time = time(NULL);
                     send_downstream(&clients, buffer);}
             }
 
@@ -372,14 +373,16 @@ int main (int argc, char **argv)
         * 
         */
 
-       //TIMER FOR ROOT SERVER UPDATE
-        if(is_root)
+       //TIMER FOR ROOT SERVER UPDATE AND POP_QUERY TIMEOUT
+        if(is_root){
             if (time(NULL) - start >= input.tsecs){
                 start = time(NULL);
                 if(input.debug)printf("Elapsed 5 seconds\n");
                 udp_encoder("WHOISROOT", buffer, (struct ipport *)NULL); //builds WHOISROOT protocol message
                 udp_client(0, buffer, input.rs_id);
             }
+            if (Pquery_active) if (time(NULL) - PQ_time >= 3){Pquery_active = false;if(input.debug)printf("PQ timeout\n");}
+        }
     }
     return 0;
 }
