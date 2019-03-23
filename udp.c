@@ -14,7 +14,7 @@ void udp_client (int key, char *buffer, struct ipport ipport){
     if((n=getaddrinfo(ipport.ip,ipport.port,&hints,&res))!=0){perror("udp_client getaddrinfo()");exit(1);}
     
     if((fd=socket(res->ai_family,res->ai_socktype,res->ai_protocol))==-1){perror("udp_client socket()");exit(1);}
-    if(input.debug)printf("cudp socket created %d\n", fd);
+    //if(input.debug)printf("cudp socket created %d\n", fd);
     
     if((n=sendto(fd,buffer,strlen(buffer),0,res->ai_addr,res->ai_addrlen))==-1){perror("udp_client sendto()");exit(1);}
 

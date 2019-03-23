@@ -103,7 +103,7 @@ int main (int argc, char **argv)
         if(FD_ISSET(ctcp_fd,&rfds)){
             if((n=read(ctcp_fd,buffer,BUFFER_SIZE))!=0){if(n==-1){ perror("uplink - read()");exit(1);}
                 if(is_root){//if(input.debug)printf("Detected traffic from stream source\n");
-                    ptp_encoder("DA", buffer, n, 0, (struct ipport *)NULL);
+                    ptp_encoder("DA", buffer, n, 0, (struct ipport *)NULL, (struct client *)NULL);
                     input.SF = true;node.ptp.DA = true;
                 }else ptp_decoder(buffer, &message, 0);
             }else{if(input.debug)printf("Uplink connection failure\n");
@@ -122,11 +122,11 @@ int main (int argc, char **argv)
 
             if (clients < input.tcpsessions){if(input.debug)printf("Connection established on socket: %d\n", newfd);
                 Array_Add(new_fds,newfd);  
-                ptp_encoder("WE", buffer, 0, 0, (struct ipport *)NULL);
+                ptp_encoder("WE", buffer, 0, 0, (struct ipport *)NULL, (struct client *)NULL);
                 write(newfd, buffer, strlen(buffer));if(input.debug)printf("Sending Welcome message\n");
                 clients++;}
             else{if(input.debug)printf("Cant accept more clients, redirecting...\n");
-                ptp_encoder("RE", buffer, 0, 0, (struct ipport *)NULL);
+                ptp_encoder("RE", buffer, 0, 0, (struct ipport *)NULL, (struct client *)NULL);
                 write(newfd, buffer, strlen(buffer));
                 close(newfd);}           
         }
@@ -175,7 +175,7 @@ int main (int argc, char **argv)
         */ 
         if (node.ptp.WE){node.ptp.WE = false;
             if(input.debug)printf("WE detected\n");
-            ptp_encoder("NP", buffer, 0, 0, (struct ipport *)NULL);
+            ptp_encoder("NP", buffer, 0, 0, (struct ipport *)NULL, (struct client *)NULL);
             write(ctcp_fd, buffer, strlen(buffer));
             //CHECKS TO SEE IF STREAM IS THE DESIRED ONE DONE IN ptp_decoder
         }
@@ -207,14 +207,14 @@ int main (int argc, char **argv)
             if (clients < input.tcpsessions){
                 bestpops--;
                 memset(buffer, '\0', strlen(buffer));
-                ptp_encoder("PR", buffer, input.tcpsessions - clients, query_num, (struct ipport *)NULL);
+                ptp_encoder("PR", buffer, input.tcpsessions - clients, query_num, (struct ipport *)NULL, (struct client *)NULL);
                 printf("buffer - %s\n", buffer);
                 write(ctcp_fd, buffer, strlen(buffer));
             }      
             if (bestpops > 0){
                 memset(buffer, '\0', strlen(buffer));
                 sprintf(buffer, "%04X", query_num);
-                ptp_encoder("PQ", buffer, bestpops, 0, (struct ipport *)NULL);
+                ptp_encoder("PQ", buffer, bestpops, 0, (struct ipport *)NULL, (struct client *)NULL);
                 send_downstream(&clients, buffer);
             }
             //setsockopt
@@ -256,12 +256,20 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.TQ){node.ptp.TQ = false;
-            //TODO
-            if(input.debug)printf("TQ detected --> %s\n", buffer);
+            if(input.debug)printf("TQ detected\n%s", buffer);
+            if (!strcasecmp(message.address.ip, input.ipaddr) && !strcasecmp(message.address.port, input.tport)){
+                ptp_encoder("TR", buffer, input.tcpsessions, clients, (struct ipport *)NULL, new_fds);
+                printf("buffer %s", buffer);
+                write(ctcp_fd, buffer, strlen(buffer));
+            }else send_downstream(&clients, buffer);
         }
 
-        if (node.ptp.TR){node.ptp.TR = false;
-            //TODO
+        if (node.ptp.TR){node.ptp.TR = false;      
+            if(input.debug)printf("TQ detected\n%s", downlink_buffer);
+            if (is_root){
+                //TODO
+            }
+            else write(ctcp_fd, downlink_buffer, strlen(downlink_buffer));
         }
 
 
@@ -307,11 +315,16 @@ int main (int argc, char **argv)
 
         if (node.user.tree){node.user.tree = false;
             //TODO
-            for (int i = 0; i < input.tcpsessions; i++){
-                memset(buffer, '\0', strlen(buffer));
-                ptp_encoder("TQ", buffer, 0, 0, &new_fds[i].ipport);
-                send_downstream(&clients, buffer);
-            }
+            if (!Tquery_active){
+                Tquery_active = true;
+                for (int i = 0; i < input.tcpsessions; i++){
+                    if (new_fds[i].fd != -1){
+                        memset(buffer, '\0', strlen(buffer));
+                        ptp_encoder("TQ", buffer, 0, 0, &new_fds[i].ipport, (struct client *)NULL);
+                        send_downstream(&clients, buffer);
+                    }
+                }
+            }else printf("Tree query already underway...\n");
         }
 
 
@@ -343,7 +356,7 @@ int main (int argc, char **argv)
                 if (bestpops > 0){
                     memset(buffer, '\0', strlen(buffer));
                     sprintf(buffer, "%04X", ++query_num);
-                    ptp_encoder("PQ", buffer, bestpops, 0, (struct ipport *)NULL); 
+                    ptp_encoder("PQ", buffer, bestpops, 0, (struct ipport *)NULL, (struct client *)NULL); 
                     printf("buffer - %s\n", buffer);
                     Pquery_active = true;
                     PQ_time = time(NULL);
@@ -383,7 +396,7 @@ int main (int argc, char **argv)
         if(is_root){
             if (time(NULL) - start >= input.tsecs){
                 start = time(NULL);
-                if(input.debug)printf("Elapsed 5 seconds\n");
+                //if(input.debug)printf("Elapsed 5 seconds\n");
                 udp_encoder("WHOISROOT", buffer, (struct ipport *)NULL); //builds WHOISROOT protocol message
                 udp_client(0, buffer, input.rs_id);
             }

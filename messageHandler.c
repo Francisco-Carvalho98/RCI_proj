@@ -81,18 +81,27 @@ void user_decoder (char * message){
     
 }
 
-void ptp_encoder(char * command, char * data, int size, int Q_id, struct ipport *ipport){
-    char message[BUFFER_SIZE];
-    if (!strcasecmp(command, "DA")) sprintf(message, "DA %.4X\n%s", size, data);
+void ptp_encoder(char * command, char * data, int int1, int int2, struct ipport *ipport, struct client *clients){
+    char message[BUFFER_SIZE], *token;
+
+    if (!strcasecmp(command, "DA")) sprintf(message, "DA %.4X\n%s", int1, data);
     else if (!strcasecmp(command, "NP")) sprintf(message, "NP %s:%s\n", input.ipaddr, input.tport);
     else if (!strcasecmp(command, "WE")) sprintf(message, "WE %s:%s:%s\n", input.stream_id.name
                                                                          , input.stream_id.ip
                                                                          , input.stream_id.port);
     else if (!strcasecmp(command, "RE")) sprintf(message, "RE %s:%s\n", new_fds[0].ipport.ip
                                                                       , new_fds[0].ipport.port);
-    else if (!strcasecmp(command, "PQ")) sprintf(message, "PQ %s %d\n",data ,size);
-    else if (!strcasecmp(command, "PR")) sprintf(message, "PR %04X %s:%s %d\n", Q_id, input.ipaddr, input.tport, size);
-    else if(!strcasecmp(command, "TQ")) sprintf(message, "TQ %s:%s\n", ipport->ip, ipport->port);
+    else if (!strcasecmp(command, "PQ")) sprintf(message, "PQ %s %d\n", data ,int1);
+    else if (!strcasecmp(command, "PR")) sprintf(message, "PR %04X %s:%s %d\n", int2, input.ipaddr, input.tport, int1);
+    else if (!strcasecmp(command, "TQ")) sprintf(message, "TQ %s:%s\n", ipport->ip, ipport->port);
+    else if (!strcasecmp(command, "TR")){
+        sprintf(message, "TR %s:%s %d\n", input.ipaddr, input.tport, int1);
+        for (int i = 0; i < int2; i++){ 
+            token = &message[0]; token += strlen(message);
+            if (clients[i].fd != -1) sprintf(token, "%s:%s\n", clients[i].ipport.ip, clients[i].ipport.port);}
+        token = &message[0]; token += strlen(message);
+        sprintf(token, "\n");
+    } 
     else{printf("Unexpected error - ptp_encoder\n");exit(EXIT_FAILURE);}
 
     strcpy(data, message);
@@ -109,7 +118,6 @@ void ptp_decoder (char *message, struct message *decoded, int key){
     else if(!strcasecmp(command, "TR")){node.ptp.TR = true;return;}
     else if(!strcasecmp(command, "SF")){node.ptp.SF = true;return;}
     else if(!strcasecmp(command, "BS")){node.ptp.BS = true;return;}
-    else if(!strcasecmp(command, "TQ")){node.ptp.TQ = true;return;}
     //else{printf("Unexpected error ptp_decoder\n");exit(EXIT_FAILURE);}
 
     //catches PR
@@ -120,7 +128,7 @@ void ptp_decoder (char *message, struct message *decoded, int key){
                                                       , decoded->address.port
                                                       , &decoded->keys[1]);
             return;}
-        else{printf("uh\n"); printf("Bad ptp message format %s\n", command);exit(1);}}
+        else{printf("Bad ptp message format %s\n", command);exit(1);}}
 
     //catches PQ
     if(sscanf(message, "%s %hX %hd", command, &decoded->keys[0], &decoded->keys[1]) == 3){
@@ -145,5 +153,8 @@ void ptp_decoder (char *message, struct message *decoded, int key){
             Array_Addipport(new_fds, key, decoded->address);
             if(input.SF) write(key, "SF\n", 3);
             else write(key, "BS\n", 3);
-        }else{printf("Bad ptp message format %s\n", command);exit(1);}}
+        }
+        else if(!strcasecmp(command, "TQ")){node.ptp.TQ = true;
+            sscanf(args[0], "%[^:]%*[:]%s", decoded->address.ip, decoded->address.port);}
+        else{printf("Bad ptp message format %s\n", command);exit(1);}}
 }
