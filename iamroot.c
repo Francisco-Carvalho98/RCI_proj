@@ -201,7 +201,7 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.PQ){node.ptp.PQ = false;
-            if(input.debug)printf("PQ detected --> %s\n", buffer);
+            if(input.debug)printf("PQ detected\n%s", buffer);
             query_num = message.keys[0];
             bestpops = message.keys[1];
             if (clients < input.tcpsessions){
@@ -222,7 +222,7 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.PR){node.ptp.PR = false;
-            if(input.debug)printf("PR detected --> %s\n", downlink_buffer);
+            if(input.debug)printf("PR detected\n%s", downlink_buffer);
             if (is_root){
                 if (Pquery_active){
                     printf("bpops %d\n", bestpops);
@@ -316,6 +316,7 @@ int main (int argc, char **argv)
         if (node.user.tree){node.user.tree = false;
             //TODO
             if (!Tquery_active){
+                TQ_time = time(NULL);
                 Tquery_active = true;
                 for (int i = 0; i < input.tcpsessions; i++){
                     if (new_fds[i].fd != -1){
@@ -401,6 +402,7 @@ int main (int argc, char **argv)
                 udp_client(0, buffer, input.rs_id);
             }
             if (Pquery_active) if (time(NULL) - PQ_time >= 3){Pquery_active = false;if(input.debug)printf("PQ timeout\n");}
+            if (Tquery_active) if (time(NULL) - TQ_time >= 5){Tquery_active = false;if(input.debug)printf("TQ timeout\n");}
         }
     }
     return 0;
