@@ -64,6 +64,8 @@ int main (int argc, char **argv)
     struct sockaddr_in addr;
     struct timeval timeout;
     bool Pquery_active = false, Tquery_active = false;
+    struct tree Tvec[64];int Tvec_C=0;
+    memset(Tvec, 0, 64*sizeof(struct tree));
 
     time_t start = time(NULL), PQ_time = time(NULL), TQ_time = time(NULL);
 
@@ -265,8 +267,23 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.TR){node.ptp.TR = false;      
-            if(input.debug)printf("TQ detected\n%s", downlink_buffer);
-            if (is_root){
+            if(input.debug)printf("TR detected\n%s", downlink_buffer);
+            if (Tquery_active){
+                sscanf(downlink_buffer, "%*s %[^:]%*[:]%s %d",Tvec[Tvec_C].self.ip, Tvec[Tvec_C].self.port, &Tvec[Tvec_C].tcpsessions);
+                printf("%s %s %d\n", Tvec[Tvec_C].self.ip, Tvec[Tvec_C].self.port, Tvec[Tvec_C].tcpsessions);
+                Tvec[Tvec_C].ipport = (struct ipport*)calloc(Tvec[Tvec_C].tcpsessions, sizeof(struct ipport));
+                token = strtok(downlink_buffer, "\n");//skips the first line
+                token = strtok(NULL, "\n");//gets the second line or NULL if non existing
+                for (int i = 0; token != NULL; i++){
+                    sscanf(token, "%[^:]%*[:]%s", Tvec[Tvec_C].ipport[i].ip, Tvec[Tvec_C].ipport[i].port);
+                    memset(downlink_buffer, 0, strlen(downlink_buffer));
+                    ptp_encoder("TQ", downlink_buffer, 0, 0, &Tvec[Tvec_C].ipport[i], (struct client *)NULL);
+                    send_downstream(&clients, downlink_buffer);
+                    token = strtok(NULL, "\n");
+                    printf("%d\n", i);
+                }                
+                Tvec_C++;
+                printf("success\n");
                 //TODO
             }
             else write(ctcp_fd, downlink_buffer, strlen(downlink_buffer));
@@ -402,7 +419,25 @@ int main (int argc, char **argv)
                 udp_client(0, buffer, input.rs_id);
             }
             if (Pquery_active) if (time(NULL) - PQ_time >= 3){Pquery_active = false;if(input.debug)printf("PQ timeout\n");}
-            if (Tquery_active) if (time(NULL) - TQ_time >= 5){Tquery_active = false;if(input.debug)printf("TQ timeout\n");}
+            if (Tquery_active) if (time(NULL) - TQ_time >= 5){
+                Tquery_active = false;if(input.debug)printf("TQ timeout\n");
+                printf("\n%s:%s:%s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
+                printf("%s:%s (%d", input.ipaddr, input.tport, input.tcpsessions);
+                for (int i = 0; i < input.tcpsessions; i++){
+                    if (new_fds[i].fd != -1) printf(" %s:%s", new_fds[i].ipport.ip, new_fds[i].ipport.port);
+                }printf(")\n");
+                for (int i = 0; i < 64; i++){
+                    if (Tvec[i].tcpsessions > 0){
+                        printf("%s:%s (%d", Tvec[i].self.ip, Tvec[i].self.port, Tvec[i].tcpsessions);
+                        for (int j = 0; j < Tvec[i].tcpsessions; j++){
+                            if (strcasecmp(Tvec[i].ipport[j].ip, "\0") && strcasecmp(Tvec[i].ipport[j].port, "\0")){
+                                printf(" %s:%s", Tvec[i].ipport[j].ip, Tvec[i].ipport[j].port);
+                            }
+                        }
+                        printf(")\n");
+                    }
+                }printf("\n");
+            }
         }
     }
     return 0;

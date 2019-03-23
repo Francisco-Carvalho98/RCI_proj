@@ -102,6 +102,12 @@ struct client {
     int fd;
 };
 
+struct tree {
+    struct ipport self;
+    struct ipport *ipport;
+    int tcpsessions;
+};
+
 //iamroot.c
 int Array_Max (struct client*);
 int Array_Add (struct client*, int);
