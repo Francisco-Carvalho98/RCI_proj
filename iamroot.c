@@ -418,26 +418,23 @@ int main (int argc, char **argv)
                 udp_encoder("WHOISROOT", buffer, (struct ipport *)NULL); //builds WHOISROOT protocol message
                 udp_client(0, buffer, input.rs_id);
             }
-            if (Pquery_active) if (time(NULL) - PQ_time >= 3){Pquery_active = false;if(input.debug)printf("PQ timeout\n");}
-            if (Tquery_active) if (time(NULL) - TQ_time >= 5){
-                Tquery_active = false;if(input.debug)printf("TQ timeout\n");
-                printf("\n%s:%s:%s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
-                printf("%s:%s (%d", input.ipaddr, input.tport, input.tcpsessions);
-                for (int i = 0; i < input.tcpsessions; i++){
-                    if (new_fds[i].fd != -1) printf(" %s:%s", new_fds[i].ipport.ip, new_fds[i].ipport.port);
-                }printf(")\n");
-                for (int i = 0; i < 64; i++){
-                    if (Tvec[i].tcpsessions > 0){
-                        printf("%s:%s (%d", Tvec[i].self.ip, Tvec[i].self.port, Tvec[i].tcpsessions);
-                        for (int j = 0; j < Tvec[i].tcpsessions; j++){
-                            if (strcasecmp(Tvec[i].ipport[j].ip, "\0") && strcasecmp(Tvec[i].ipport[j].port, "\0")){
-                                printf(" %s:%s", Tvec[i].ipport[j].ip, Tvec[i].ipport[j].port);
-                            }
-                        }
-                        printf(")\n");
-                    }
-                }printf("\n");
-            }
+            if (Pquery_active) if (time(NULL) - PQ_time >= 2){Pquery_active = false;if(input.debug)printf("PQ timeout\n");}
+        }
+            
+        if (Tquery_active) if (time(NULL) - TQ_time >= 3){
+            Tquery_active = false;if(input.debug)printf("TQ timeout\n");
+            printf("\n%s:%s:%s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
+            printf("%s:%s (%d", input.ipaddr, input.tport, input.tcpsessions);
+            for (int i = 0; i < input.tcpsessions; i++)if (new_fds[i].fd != -1) printf(" %s:%s", new_fds[i].ipport.ip, new_fds[i].ipport.port);
+            printf(")\n");
+            for (int i = 0; i < 64; i++){
+                if (Tvec[i].tcpsessions > 0){
+                    printf("%s:%s (%d", Tvec[i].self.ip, Tvec[i].self.port, Tvec[i].tcpsessions);
+                    for (int j = 0; j < Tvec[i].tcpsessions; j++)
+                        if (strcasecmp(Tvec[i].ipport[j].ip, "\0") && strcasecmp(Tvec[i].ipport[j].port, "\0"))
+                            printf(" %s:%s", Tvec[i].ipport[j].ip, Tvec[i].ipport[j].port);
+                    printf(")\n");}
+            }printf("\n");
         }
     }
     return 0;
@@ -455,9 +452,10 @@ int Array_Add (struct client *vector, int fd){
 }
 
 int Array_Rem (struct client *vector, int fd){
-    for(int i = 0; i < input.tcpsessions; i++) if (vector[i].fd == fd){vector[i].fd = -1; 
-                                                                       memset(&vector[i].ipport, '\0', sizeof(struct ipport));
-                                                                       return 0;}
+    for(int i = 0; i < input.tcpsessions; i++) 
+        if (vector[i].fd == fd){vector[i].fd = -1; 
+            memset(&vector[i].ipport, '\0', sizeof(struct ipport));
+            return 0;}
     return -1;
 }
 

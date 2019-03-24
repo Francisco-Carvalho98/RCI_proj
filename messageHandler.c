@@ -46,8 +46,7 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
         //splits address into ip and port, ignores stream name
         sscanf(decoded->args[0], "%*[^:]%*[:]%[^:]%*[:]%s", decoded->address.ip, decoded->address.port);
         return;}
-        
-    
+         
     //catches a POPREQ
     if (!strcasecmp(decoded->command, "POPREQ")){node.udp.POPREQ = true;return;}
 
@@ -62,6 +61,13 @@ void user_decoder (char * message){
     char args[10];
     sscanf(message, "%s %s", command, args);
     if (!strcasecmp(command, "streams")) node.user.streams = true;
+    else if (!strcasecmp(command, "exit")) node.user.exit_ = true;
+    else if (!strcasecmp(command, "status")) node.user.status = true;
+    else if (!strcasecmp(command, "tree")) node.user.tree = true;
+    else if (!strcasecmp(command, "format")){
+        if (!strcasecmp(args, "ascii")) input.format = true;
+        else if (!strcasecmp(args, "hex")) input.format = false;
+        else printf("Invalid command argument\n");}
     else if (!strcasecmp(command, "debug")){
         if (!strcasecmp(args, "on")) input.debug = true;
         else if (!strcasecmp(args, "off")) input.debug = false;
@@ -70,13 +76,6 @@ void user_decoder (char * message){
         if (!strcasecmp(args, "on")) input.display = true;
         else if (!strcasecmp(args, "off")) input.display = false;
         else printf("Invalid command argument\n");}
-    else if (!strcasecmp(command, "exit")) node.user.exit_ = true;
-    else if (!strcasecmp(command, "format")){
-        if (!strcasecmp(args, "ascii")) input.format = true;
-        else if (!strcasecmp(args, "hex")) input.format = false;
-        else printf("Invalid command argument\n");}
-    else if (!strcasecmp(command, "status")) node.user.status = true;
-    else if (!strcasecmp(command, "tree")) node.user.tree = true;
     else printf("Invalid command\n");
     
 }
@@ -112,7 +111,7 @@ void ptp_decoder (char *message, struct message *decoded, int key){
     char command[10];
     char args[4][60];
 
-    //catches DA, TR
+    //catches DA, TR, SF, BS, TQ
     sscanf(message, "%s %s", command, args[0]);
     if (!strcasecmp(command, "DA")){node.ptp.DA = true;return;}
     else if(!strcasecmp(command, "TR")){node.ptp.TR = true;return;}
@@ -128,12 +127,12 @@ void ptp_decoder (char *message, struct message *decoded, int key){
                                                       , decoded->address.port
                                                       , &decoded->keys[1]);
             return;}
-        else{printf("Bad ptp message format %s\n", command);exit(1);}}
+        else{printf("Bad ptp message format\n%s\n", message);exit(1);}}
 
     //catches PQ
     if(sscanf(message, "%s %hX %hd", command, &decoded->keys[0], &decoded->keys[1]) == 3){
         if (!strcasecmp(command, "PQ")){node.ptp.PQ = true;return;}       
-        else{printf("uh\n"); printf("Bad ptp message format %s\n", command);exit(1);}} 
+        else{printf("uh\n"); printf("Bad ptp message format\n%s\n", message);exit(1);}} 
     
     //catches WE, NP, RE, TQ
     if(sscanf(message, "%s %s", command, args[0]) == 2){
@@ -156,5 +155,5 @@ void ptp_decoder (char *message, struct message *decoded, int key){
         }
         else if(!strcasecmp(command, "TQ")){node.ptp.TQ = true;
             sscanf(args[0], "%[^:]%*[:]%s", decoded->address.ip, decoded->address.port);}
-        else{printf("Bad ptp message format %s\n", command);exit(1);}}
+        else{printf("Bad ptp message format\n%s\n", message);exit(1);}}
 }
