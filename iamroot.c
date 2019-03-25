@@ -2,8 +2,8 @@
 
 int main (int argc, char **argv)
 {
-    char buffer[BUFFER_SIZE], downlink_buffer[BUFFER_SIZE], *token;
-    memset(buffer, '\0', BUFFER_SIZE);memset(downlink_buffer, '\0', BUFFER_SIZE);
+    char buffer[BUFFER_SIZE], downlink_buffer[BUFFER_SIZE],T_buffer[BUFFER_SIZE], *token;
+    memset(buffer, '\0', BUFFER_SIZE);memset(downlink_buffer, '\0', BUFFER_SIZE);memset(T_buffer, '\0', BUFFER_SIZE);
     struct message message, downlink_message;
     int ctcp_fd, sudp_fd, stcp_fd;
     
@@ -259,11 +259,17 @@ int main (int argc, char **argv)
 
         if (node.ptp.TQ){node.ptp.TQ = false;
             if(input.debug)printf("TQ detected\n%s", buffer);
-            if (!strcasecmp(message.address.ip, input.ipaddr) && !strcasecmp(message.address.port, input.tport)){
-                ptp_encoder("TR", buffer, input.tcpsessions, clients, (struct ipport *)NULL, new_fds);
-                printf("buffer %s", buffer);
-                write(ctcp_fd, buffer, strlen(buffer));
-            }else send_downstream(&clients, buffer);
+            token = strtok(buffer, "\n");
+            while (token != NULL){
+                sscanf(token, "%*s %[^:]%*[:]%s", message.address.ip, message.address.port);
+                if (!strcasecmp(message.address.ip, input.ipaddr) && !strcasecmp(message.address.port, input.tport)){
+                    ptp_encoder("TR", T_buffer, input.tcpsessions, clients, (struct ipport *)NULL, new_fds);
+                    write(ctcp_fd, T_buffer, strlen(T_buffer));
+                }else send_downstream(&clients, token);
+                token = strtok(NULL, "\n");
+                memset(&message, '\0', sizeof message);
+            }
+            memset(T_buffer, '\0', BUFFER_SIZE);
         }
 
         if (node.ptp.TR){node.ptp.TR = false;      
@@ -284,7 +290,6 @@ int main (int argc, char **argv)
                 }                
                 Tvec_C++;
                 printf("success\n");
-                //TODO
             }
             else write(ctcp_fd, downlink_buffer, strlen(downlink_buffer));
         }
@@ -433,7 +438,8 @@ int main (int argc, char **argv)
                     for (int j = 0; j < Tvec[i].tcpsessions; j++)
                         if (strcasecmp(Tvec[i].ipport[j].ip, "\0") && strcasecmp(Tvec[i].ipport[j].port, "\0"))
                             printf(" %s:%s", Tvec[i].ipport[j].ip, Tvec[i].ipport[j].port);
-                    printf(")\n");}
+                    printf(")\n");free(Tvec[i].ipport);Tvec[i].tcpsessions = 0;
+                    memset(&Tvec[i].self, '\0', sizeof (struct ipport));}
             }printf("\n");
         }
     }

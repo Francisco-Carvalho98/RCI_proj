@@ -117,6 +117,7 @@ void ptp_decoder (char *message, struct message *decoded, int key){
     else if(!strcasecmp(command, "TR")){node.ptp.TR = true;return;}
     else if(!strcasecmp(command, "SF")){node.ptp.SF = true;return;}
     else if(!strcasecmp(command, "BS")){node.ptp.BS = true;return;}
+    else if(!strcasecmp(command, "TQ")){node.ptp.TQ = true;return;}
     //else{printf("Unexpected error ptp_decoder\n");exit(EXIT_FAILURE);}
 
     //catches PR
@@ -134,7 +135,7 @@ void ptp_decoder (char *message, struct message *decoded, int key){
         if (!strcasecmp(command, "PQ")){node.ptp.PQ = true;return;}       
         else{printf("uh\n"); printf("Bad ptp message format\n%s\n", message);exit(1);}} 
     
-    //catches WE, NP, RE, TQ
+    //catches WE, NP, RE
     if(sscanf(message, "%s %s", command, args[0]) == 2){
         if(!strcasecmp(command, "WE")){node.ptp.WE = true;
                 sscanf(args[0], "%[^:]%*[:]%[^:]%*[:]%s", args[1], args[2], args[3]);
@@ -153,7 +154,5 @@ void ptp_decoder (char *message, struct message *decoded, int key){
             if(input.SF) write(key, "SF\n", 3);
             else write(key, "BS\n", 3);
         }
-        else if(!strcasecmp(command, "TQ")){node.ptp.TQ = true;
-            sscanf(args[0], "%[^:]%*[:]%s", decoded->address.ip, decoded->address.port);}
         else{printf("Bad ptp message format\n%s\n", message);exit(1);}}
 }
