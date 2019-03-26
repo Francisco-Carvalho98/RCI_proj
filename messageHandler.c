@@ -85,11 +85,8 @@ void ptp_encoder(char * command, char * data, int int1, int int2, struct ipport 
 
     if (!strcasecmp(command, "DA")) sprintf(message, "DA %.4X\n%s", int1, data);
     else if (!strcasecmp(command, "NP")) sprintf(message, "NP %s:%s\n", input.ipaddr, input.tport);
-    else if (!strcasecmp(command, "WE")) sprintf(message, "WE %s:%s:%s\n", input.stream_id.name
-                                                                         , input.stream_id.ip
-                                                                         , input.stream_id.port);
-    else if (!strcasecmp(command, "RE")) sprintf(message, "RE %s:%s\n", new_fds[0].ipport.ip
-                                                                      , new_fds[0].ipport.port);
+    else if (!strcasecmp(command, "WE")) sprintf(message, "WE %s:%s:%s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
+    else if (!strcasecmp(command, "RE")) sprintf(message, "RE %s:%s\n", new_fds[0].ipport.ip, new_fds[0].ipport.port);
     else if (!strcasecmp(command, "PQ")) sprintf(message, "PQ %s %d\n", data ,int1);
     else if (!strcasecmp(command, "PR")) sprintf(message, "PR %04X %s:%s %d\n", int2, input.ipaddr, input.tport, int1);
     else if (!strcasecmp(command, "TQ")) sprintf(message, "TQ %s:%s\n", ipport->ip, ipport->port);
@@ -98,8 +95,7 @@ void ptp_encoder(char * command, char * data, int int1, int int2, struct ipport 
         for (int i = 0; i < int2; i++){ 
             token = &message[0]; token += strlen(message);
             if (clients[i].fd != -1) sprintf(token, "%s:%s\n", clients[i].ipport.ip, clients[i].ipport.port);}
-        token = &message[0]; token += strlen(message);
-        sprintf(token, "\n");
+        token = &message[0]; token += strlen(message); sprintf(token, "\n");
     } 
     else{printf("Unexpected error - ptp_encoder\n");exit(EXIT_FAILURE);}
 
