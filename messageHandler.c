@@ -28,12 +28,9 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
     if (sscanf(message, "%s %s %s", decoded->command, decoded->args[0], decoded->args[1]) == 3){
         if (!strcasecmp(decoded->command, "ROOTIS")) node.udp.ROOTIS = true;
         else if (!strcasecmp(decoded->command, "POPRESP")); //node.udp.POPRESP = true;
-        else if (!strcasecmp(decoded->command, "STREAMS")){
-            message += 8;//skips "STREAMS\n"
-            printf("Streams:\n");
-            printf("%s", message);
-            return;
-        }else{printf("Unexpected error - udp\n");exit(EXIT_FAILURE);}
+        else if (!strcasecmp(decoded->command, "STREAMS")){node.udp.STREAMS = true;return;}
+        else{printf("Unexpected error - udp\n");exit(EXIT_FAILURE);}
+
         //splits address into ip and port
         sscanf(decoded->args[1], "%[^:]%*[:]%s", decoded->address.ip, decoded->address.port);
         return;}
@@ -51,7 +48,7 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
     if (!strcasecmp(decoded->command, "POPREQ")){node.udp.POPREQ = true;return;}
 
     //catches empty stream
-    printf("Streams:\nNo streams running\n");
+    if (!strcasecmp(decoded->command, "STREAMS")) printf("Streams:\nNo streams running\n");
     return;
 }
 
@@ -80,22 +77,21 @@ void user_decoder (char * message){
     
 }
 
-void ptp_encoder(char * command, char * data, int int1, int int2, struct ipport *ipport, struct client *clients){
+void ptp_encoder(char * command, char * data, int int1, int int2, struct ipport *ipport){
     char message[BUFFER_SIZE], *token;
 
-    if (!strcasecmp(command, "DA")) sprintf(message, "DA %.4X\n%s", int1, data);
+         if (!strcasecmp(command, "DA")) sprintf(message, "DA %.4X\n%s", int1, data);
     else if (!strcasecmp(command, "NP")) sprintf(message, "NP %s:%s\n", input.ipaddr, input.tport);
     else if (!strcasecmp(command, "WE")) sprintf(message, "WE %s:%s:%s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
     else if (!strcasecmp(command, "RE")) sprintf(message, "RE %s:%s\n", new_fds[0].ipport.ip, new_fds[0].ipport.port);
     else if (!strcasecmp(command, "PQ")) sprintf(message, "PQ %s %d\n", data ,int1);
     else if (!strcasecmp(command, "PR")) sprintf(message, "PR %04X %s:%s %d\n", int2, input.ipaddr, input.tport, int1);
     else if (!strcasecmp(command, "TQ")) sprintf(message, "TQ %s:%s\n", ipport->ip, ipport->port);
-    else if (!strcasecmp(command, "TR")){
-        sprintf(message, "TR %s:%s %d\n", input.ipaddr, input.tport, int1);
-        for (int i = 0; i < int2; i++){ 
+    else if (!strcasecmp(command, "TR")){sprintf(message, "TR %s:%s %d\n", input.ipaddr, input.tport, input.tcpsessions);
+        for (int i = 0; i < input.tcpsessions; i++){ 
             token = &message[0]; token += strlen(message);
-            if (clients[i].fd != -1) sprintf(token, "%s:%s\n", clients[i].ipport.ip, clients[i].ipport.port);}
-        token = &message[0]; token += strlen(message); sprintf(token, "\n");
+            if (new_fds[i].fd != -1) sprintf(token, "%s:%s\n", new_fds[i].ipport.ip, new_fds[i].ipport.port);}
+        strcat(message, "\n");
     } 
     else{printf("Unexpected error - ptp_encoder\n");exit(EXIT_FAILURE);}
 
@@ -109,20 +105,16 @@ void ptp_decoder (char *message, struct message *decoded, int key){
 
     //catches DA, TR, SF, BS, TQ
     sscanf(message, "%s %s", command, args[0]);
-    if (!strcasecmp(command, "DA")){node.ptp.DA = true;return;}
-    else if(!strcasecmp(command, "TR")){node.ptp.TR = true;return;}
-    else if(!strcasecmp(command, "SF")){node.ptp.SF = true;return;}
-    else if(!strcasecmp(command, "BS")){node.ptp.BS = true;return;}
-    else if(!strcasecmp(command, "TQ")){node.ptp.TQ = true;return;}
-    //else{printf("Unexpected error ptp_decoder\n");exit(EXIT_FAILURE);}
+         if (!strcasecmp(command, "DA")){node.ptp.DA = true;return;}
+    else if (!strcasecmp(command, "TR")){node.ptp.TR = true;return;}
+    else if (!strcasecmp(command, "SF")){node.ptp.SF = true;return;}
+    else if (!strcasecmp(command, "BS")){node.ptp.BS = true;return;}
+    else if (!strcasecmp(command, "TQ")){node.ptp.TQ = true;return;}
 
     //catches PR
     if(sscanf(message, "%s %s %s %s", command, args[0], args[1], args[2]) == 4){
         if (!strcasecmp(command, "PR")){node.ptp.PR = true; 
-            sscanf(message, "%*s %hX %[^:]%*[:]%s %hd", &decoded->keys[0]
-                                                      , decoded->address.ip
-                                                      , decoded->address.port
-                                                      , &decoded->keys[1]);
+            sscanf(message, "%*s %hX %[^:]%*[:]%s %hd", &decoded->keys[0], decoded->address.ip, decoded->address.port, &decoded->keys[1]);
             return;}
         else{printf("Bad ptp message format\n%s\n", message);exit(1);}}
 
@@ -135,8 +127,9 @@ void ptp_decoder (char *message, struct message *decoded, int key){
     if(sscanf(message, "%s %s", command, args[0]) == 2){
         if(!strcasecmp(command, "WE")){node.ptp.WE = true;
                 sscanf(args[0], "%[^:]%*[:]%[^:]%*[:]%s", args[1], args[2], args[3]);
-                if (!strcasecmp(input.stream_id.name, args[1]) && !strcasecmp(input.stream_id.ip, args[2]) 
-                                                               && !strcasecmp(input.stream_id.port, args[3])){
+                if (!strcasecmp(input.stream_id.name, args[1]) 
+                &&  !strcasecmp(input.stream_id.ip, args[2]) 
+                &&  !strcasecmp(input.stream_id.port, args[3])){
                     if(input.debug)printf("Connected to desired stream\n");
                     return;
                 }else{printf("Connected to wrong stream, exiting...\n");exit(1);}

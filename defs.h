@@ -83,6 +83,7 @@ struct input{
     bool help;
     bool SF;
     bool format;
+    struct ipport uplink;
 };
 
 struct message{
@@ -133,7 +134,7 @@ int tcp_server ();
 //packetHandler.c
 void udp_encoder (char *, char *, struct ipport *);
 void udp_decoder (char *, struct message *);
-void ptp_encoder (char*, char*, int, int, struct ipport *, struct client *);
+void ptp_encoder (char*, char*, int, int, struct ipport *);
 void ptp_decoder (char*, struct message *, int);
 void user_decoder (char*);
 
