@@ -30,7 +30,7 @@ void udp_client (int key, char *buffer, struct ipport ipport){
 
         n=select(fd+1, &set, (fd_set *)NULL, (fd_set *)NULL, &timeout);
         if(n<0){perror("select()"); exit(1);}
-        if(counter >= 3){printf("UDP timeout\n");exit(1);}
+        if(counter >= 3){if(input.debug)printf("UDP timeout\n");exit(1);}
 
         if(n == 0){
             if(input.debug)printf("Retrying...\n");
@@ -45,7 +45,7 @@ void udp_client (int key, char *buffer, struct ipport ipport){
         break;
     }
     
-    printf("UDP --> %s", buffer);
+    //printf("UDP --> %s", buffer);
     freeaddrinfo(res);
     close(fd);//if(input.debug)printf("cudp socket closing %d\n", fd);
 

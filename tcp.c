@@ -20,7 +20,7 @@ int tcp_client (struct ipport ipport){
 
     if((fd=socket(res->ai_family,res->ai_socktype,res->ai_protocol))==-1){perror("tcp_client socket()");exit(1);}
     
-    if((n=connect(fd,res->ai_addr,res->ai_addrlen))==-1){perror("tcp_client connect()");exit(1);}
+    if((n=connect(fd,res->ai_addr,res->ai_addrlen))==-1){printf("Couldn't connect, retrying...\n");close(fd);fd = -1;}
 
     freeaddrinfo(res);
     //if(input.debug)printf("ctcp socket created - %d\n", fd);

@@ -27,7 +27,7 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
     //catches a ROOTIS, POPRESP and non empty STREAM
     if (sscanf(message, "%s %s %s", decoded->command, decoded->args[0], decoded->args[1]) == 3){
         if (!strcasecmp(decoded->command, "ROOTIS")) node.udp.ROOTIS = true;
-        else if (!strcasecmp(decoded->command, "POPRESP")); //node.udp.POPRESP = true;
+        else if (!strcasecmp(decoded->command, "POPRESP"))node.udp.POPRESP = true;
         else if (!strcasecmp(decoded->command, "STREAMS")){node.udp.STREAMS = true;return;}
         else{printf("Unexpected error - udp\n");exit(EXIT_FAILURE);}
 
@@ -141,7 +141,6 @@ void ptp_decoder (char *message, struct message *decoded, int key){
             sscanf(args[0], "%[^:]%*[:]%s", decoded->address.ip, decoded->address.port);
             Array_Addipport(new_fds, key, decoded->address);
             if(input.SF) write(key, "SF\n", 3);
-            else write(key, "BS\n", 3);
         }
         else{printf("Bad ptp message format\n%s\n", message);exit(1);}}
 }

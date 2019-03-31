@@ -2,10 +2,10 @@
 
 int main (int argc, char **argv)
 {
-    char buffer[BUFFER_SIZE], downlink_buffer[BUFFER_SIZE],T_buffer[BUFFER_SIZE], *token,*token2;
-    memset(buffer, 0, BUFFER_SIZE);memset(downlink_buffer, 0, BUFFER_SIZE);memset(T_buffer, 0, BUFFER_SIZE);
-    struct message message, downlink_message;
-    int ctcp_fd, sudp_fd, stcp_fd;
+    char buffer[BUFFER_SIZE], D_buffer[BUFFER_SIZE],T_buffer[BUFFER_SIZE], *token,*token2;
+    memset(buffer, 0, BUFFER_SIZE);memset(D_buffer, 0, BUFFER_SIZE);memset(T_buffer, 0, BUFFER_SIZE);
+    struct message message, D_message;
+    int ctcp_fd=-1, sudp_fd=-1, stcp_fd=-1;
     
     //takes care of program input args or sets to default if not specified
     inputHandler(argv, argc);
@@ -22,31 +22,6 @@ int main (int argc, char **argv)
     udp_client(0, buffer, input.rs_id); //sends the built message
     udp_decoder(buffer, &message); //decodes received message
     
-    if (node.udp.URROOT){node.udp.URROOT = false;is_root=true;//APLICATION IS ROOT
-  
-        //adds pop to pop array
-        strcpy(pop[0].ipport.ip, input.ipaddr);
-        strcpy(pop[0].ipport.port, input.tport);
-        pop[0].key = 0;
-        //initializes udp access server
-        sudp_fd = udp_server(); //printf("udp access server created on socket %d\n", sudp_fd);
-
-    }else if (node.udp.ROOTIS){node.udp.ROOTIS = false;is_root=false;//APLICATION IS NOT ROOT
-        sudp_fd = -1;
-        //build POPREQ message
-        memset(buffer, '\0', strlen(buffer));
-        strcpy(buffer, "POPREQ\n"); //printf("Sending: %s to %s:%s\n",buffer, message.address.adress, message.address.port);
-        udp_client(0, buffer, message.address);//send it
-
-        //decode POPRESP received message
-        udp_decoder(buffer, &message); 
-
-    }else{printf("Unexpected error - iamroot\n");exit(EXIT_FAILURE);}
-
-    //connects to stream source
-    ctcp_fd = tcp_client(message.address); //printf("Connected to stream source on socket: %d\n", ctcp_fd);
-    strcpy(input.uplink.ip, message.address.ip);strcpy(input.uplink.port, message.address.port);
-
     //initializes tcp downlink server
     stcp_fd = tcp_server(); //printf("tcp root downlink server created on socket %d\n", stcp_fd);
 
@@ -59,14 +34,13 @@ int main (int argc, char **argv)
     strcpy(new_fds[0].ipport.port, input.tport);
 
     fd_set rfds;
-    int counter, n, addrlen, newfd=-1, maxfd, clients = 0, pop_tracker = 0, bestpops = 0;
+    int counter, n, addrlen, newfd=-1, maxfd=-1, clients = 0, pop_tracker = 0, bestpops = 0;
     unsigned short query_num = -1;
     struct sockaddr_in addr;
     struct timeval timeout;
     bool Pquery_active = false, Tquery_active = false;
     struct tree Tvec[64];int Tvec_C=0;
     memset(Tvec, 0, 64*sizeof(struct tree));
-
     time_t start = time(NULL), PQ_time = time(NULL), TQ_time = time(NULL);
 
     while(1){
@@ -79,22 +53,18 @@ int main (int argc, char **argv)
         FD_SET(STDIN_FILENO,&rfds);
         for (int i = 0; i < input.tcpsessions; i++) if(new_fds[i].fd!=-1) FD_SET(new_fds[i].fd, &rfds);
 
-        //Clears buffers for the next cicle
-        memset(buffer, '\0', BUFFER_SIZE);memset(downlink_buffer, '\0', BUFFER_SIZE);memset(T_buffer, 0, BUFFER_SIZE);
-        memset(&message, '\0', sizeof message);
-        memset(&message, '\0', sizeof downlink_message);
-
-        timeout.tv_sec = 2;
+        timeout.tv_sec = 1;
         timeout.tv_usec = 0;
 
         //GETS THE BIGGEST FD 
-        if(!(maxfd=Array_Max(new_fds))) maxfd = stcp_fd > sudp_fd ? stcp_fd : sudp_fd;
+        if(!(maxfd=Array_Max(new_fds))) maxfd = ctcp_fd > sudp_fd ? ctcp_fd : sudp_fd;
         maxfd = maxfd > sudp_fd ? maxfd : sudp_fd;
 
-        counter=select(maxfd+1,&rfds, NULL, NULL, &timeout);
+        if (ctcp_fd != -1) counter=select(maxfd+1,&rfds, NULL, NULL, &timeout);
         if(counter<0){perror("select()"); exit(1);}
-        else if(counter == 0) printf("select timeout\n");
-
+        else if(counter == 0){
+            if(input.debug && ctcp_fd != -1)printf("select timeout\n");
+            FD_ZERO(&rfds);}
 
         /*
         *
@@ -104,14 +74,10 @@ int main (int argc, char **argv)
 
         //checks for uplink connection packets ------ TCP 
         if(FD_ISSET(ctcp_fd,&rfds)){
-            if((n=read(ctcp_fd,buffer,BUFFER_SIZE))!=0){if(n==-1){ perror("uplink - read()");exit(1);}
-                if(is_root){//if(input.debug)printf("Detected traffic from stream source\n");
+            if((n=read(ctcp_fd,buffer,BUFFER_SIZE))!=0){if(n==-1){perror("uplink - read()");exit(1);}
+                if(is_root){node.ptp.DA = true;
                     ptp_encoder("DA", buffer, n, 0, NULL);
-                    if (!input.SF){
-                        input.SF = true;
-                        send_downstream(&clients, "SF\n");
-                    }
-                    node.ptp.DA = true;
+                    if (!input.SF){input.SF = true;send_downstream(&clients, "SF\n");}
                 }else ptp_decoder(buffer, &message, 0);
             }else{if(input.debug)printf("Uplink connection failure\n");
                 close(ctcp_fd);ctcp_fd = -1;
@@ -125,12 +91,13 @@ int main (int argc, char **argv)
         //checks for downlink connection attempts ------- TCP
         else if(FD_ISSET(stcp_fd, &rfds)){
             addrlen=sizeof(addr);
-            if((newfd=accept(stcp_fd,(struct sockaddr*)&addr,(unsigned int *)&addrlen))==-1){perror("downlink - accept()");exit(1);}
-
+            if((newfd=accept(stcp_fd,(struct sockaddr*)&addr,(unsigned int *)&addrlen))==-1){
+                perror("downlink - accept()");exit(1);}
             if (clients < input.tcpsessions){if(input.debug)printf("Connection established on socket: %d\n", newfd);
                 Array_Add(new_fds,newfd);  
                 ptp_encoder("WE", buffer, 0, 0, NULL);
-                write(newfd, buffer, strlen(buffer));if(input.debug)printf("Sending Welcome message\n");
+                write(newfd, buffer, strlen(buffer));//if(input.debug)printf("Sending Welcome message\n");
+                if(input.SF)write(newfd, "SF\n", 3);
                 clients++;}
             else{if(input.debug)printf("Cant accept more clients, redirecting...\n");
                 ptp_encoder("RE", buffer, 0, 0, NULL);
@@ -139,27 +106,24 @@ int main (int argc, char **argv)
         }
 
         //check for udp access server requests -------- UDP
-        else if(FD_ISSET(sudp_fd,&rfds)){printf("Detected traffic to upd access server\n");
+        else if(FD_ISSET(sudp_fd,&rfds)){if(input.debug)printf("Detected traffic to upd access server\n");
             addrlen=sizeof(addr);
-            if((n=recvfrom(sudp_fd,buffer,BUFFER_SIZE,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen))==-1){perror("recvfrom access server");exit(1);};      
+            if((n=recvfrom(sudp_fd,buffer,BUFFER_SIZE,0,(struct sockaddr*)&addr,(unsigned int *)&addrlen))==-1){
+                perror("recvfrom access server");exit(1);};      
             udp_decoder(buffer, &message);
         }
 
         //checks for user input ---- STDIN
-        else if(FD_ISSET(STDIN_FILENO,&rfds)){
-            fgets(buffer, BUFFER_SIZE, stdin);  
-            user_decoder(buffer);
-        }
+        else if(FD_ISSET(STDIN_FILENO,&rfds)){fgets(buffer, BUFFER_SIZE, stdin);user_decoder(buffer);}
 
         //check for downlink connection packets ----- TCP
         for (int i = 0; i < input.tcpsessions; i++)
             if (FD_ISSET(new_fds[i].fd, &rfds)){
-                if((n=read(new_fds[i].fd,downlink_buffer,BUFFER_SIZE))!=0){
+                if((n=read(new_fds[i].fd,D_buffer,BUFFER_SIZE))!=0){
                     if(n==-1){perror("downlink - read()");exit(1);}
-                    ptp_decoder(downlink_buffer, &downlink_message, new_fds[i].fd);
-                }else{printf("Detected a connection failure, closing...\n");
-                    close(new_fds[i].fd); 
-                    clients--;
+                    ptp_decoder(D_buffer, &D_message, new_fds[i].fd);
+                }else{if(input.debug)printf("Detected a connection failure, closing...\n");
+                    close(new_fds[i].fd);clients--;
                     Array_Rem(new_fds, new_fds[i].fd);
                 }
                 break;
@@ -182,14 +146,15 @@ int main (int argc, char **argv)
         */ 
         if (node.ptp.WE){node.ptp.WE = false;
             if(input.debug)printf("WE detected\n%s", buffer);
+            token = strchr(buffer, '\n');token++; 
+            if (!strncasecmp(token, "SF", 2)) node.ptp.SF = true;
             ptp_encoder("NP", buffer, 0, 0, NULL);
             write(ctcp_fd, buffer, strlen(buffer));
             //CHECKS TO SEE IF STREAM IS THE DESIRED ONE DONE IN ptp_decoder
         }
 
-        if (node.ptp.BS){node.ptp.BS = false;
+        if (node.ptp.BS){node.ptp.BS = false;input.SF = false;
             if(input.debug)printf("BS detected\n");
-            input.SF = false;
             send_downstream(&clients, "BS\n");
         }
 
@@ -227,31 +192,29 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.PR){node.ptp.PR = false;
-            if(input.debug)printf("PR detected\n%s", downlink_buffer);
+            if(input.debug)printf("PR detected\n%s", D_buffer);
             if (is_root){
                 if (Pquery_active){
                     printf("bpops %d\n", bestpops);
-                    strcpy(pop[input.bestpops - bestpops].ipport.ip, downlink_message.address.ip);
-                    strcpy(pop[input.bestpops - bestpops].ipport.port, downlink_message.address.port);
+                    strcpy(pop[input.bestpops - bestpops].ipport.ip, D_message.address.ip);
+                    strcpy(pop[input.bestpops - bestpops].ipport.port, D_message.address.port);
                     pop[input.bestpops - bestpops].key = 0;
                     bestpops--;
-                    for (int i = 0; i < input.bestpops; i++) printf("%s:%s -> %d\n", pop[i].ipport.ip, pop[i].ipport.port, pop[i].key);
+                    for (int i = 0; i < input.bestpops; i++) 
+                        printf("%s:%s -> %d\n", pop[i].ipport.ip, pop[i].ipport.port, pop[i].key);
                     if (bestpops == 0) Pquery_active = false;
                 }
             }else{
-                if (query_num == downlink_message.keys[0] && bestpops > 0){
+                if (query_num == D_message.keys[0] && bestpops > 0){
                     bestpops--;
-                    write(ctcp_fd, downlink_buffer, strlen(downlink_buffer));
+                    write(ctcp_fd, D_buffer, strlen(D_buffer));
                 }
             }
-            //TODO
         }
 
         if (node.ptp.RE){node.ptp.RE = false;
-            if(input.debug)printf("RE detected\n%s", buffer);
-            if(input.debug)printf("Closing ctcp: %d\n", ctcp_fd);
-            close(ctcp_fd);
-            ctcp_fd = tcp_client(message.address);
+            if(input.debug){printf("RE detected\n%s", buffer);printf("Closing ctcp: %d\n", ctcp_fd);}
+            close(ctcp_fd);ctcp_fd = tcp_client(message.address);
             strcpy(input.uplink.ip, message.address.ip);strcpy(input.uplink.port, message.address.port);
         }
 
@@ -277,10 +240,9 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.TR){node.ptp.TR = false;TQ_time=time(NULL);      
-            if (input.debug)printf("TR detected\n%sTR end\n", downlink_buffer);
-            if (Tquery_active){
-                
-                token2 = &downlink_buffer[0];
+            if (input.debug)printf("TR detected\n%sTR end\n", D_buffer);
+            if (Tquery_active){   
+                token2 = &D_buffer[0];
                 do{     
                     for (int i = 0; token2[i] != '\0'; i++) 
                         if (token2[i] == '\n' && token2[i+1] == '\n'){
@@ -301,7 +263,7 @@ int main (int argc, char **argv)
                     Tvec_C++;
                 }while(strcasecmp(token2, ""));
             }
-            else write(ctcp_fd, downlink_buffer, strlen(downlink_buffer));
+            else write(ctcp_fd, D_buffer, strlen(D_buffer));
         }
 
 
@@ -310,15 +272,7 @@ int main (int argc, char **argv)
         /*
         *   user related flags
         * 
-        */ 
-        if (node.user.debug){node.user.debug = false;
-             //DONE IN user_decode FOR NOW
-        }
-
-        if (node.user.display){node.user.display = false;
-             //DONE IN user_decode FOR NOW
-        }
-
+        */
         if (node.user.exit_){node.user.exit_ = false; 
             if(is_root){
                 udp_encoder("REMOVE", buffer, NULL);
@@ -329,10 +283,6 @@ int main (int argc, char **argv)
             free(new_fds);free(pop);
             printf("Exiting...\n");
             exit(0); 
-        }
-
-        if (node.user.format){node.user.format = false;
-            //DONE IN user_decode FOR NOW
         }
 
         if (node.user.status){node.user.status = false;
@@ -346,7 +296,6 @@ int main (int argc, char **argv)
         }       
 
         if (node.user.tree){node.user.tree = false;
-            //TODO
             if (!Tquery_active){
                 TQ_time = time(NULL);
                 Tquery_active = true;
@@ -368,48 +317,49 @@ int main (int argc, char **argv)
         * 
         */ 
         if (node.udp.STREAMS){node.udp.STREAMS = false;
+            if(input.debug)printf("STREAMS detected\n");
             token = &buffer[0]; token +=8;
             printf("Streams:\n%s", token);
         }
 
         if (node.udp.POPREQ){node.udp.POPREQ = false; 
-            printf("POPREQ detected\n");
+            if(input.debug)printf("POPREQ detected\n");
             memset(buffer, '\0', strlen(buffer));
             udp_encoder("POPRESP", buffer, &(pop[pop_tracker].ipport));
             if((n=sendto(sudp_fd,buffer,strlen(buffer),0,(struct sockaddr*)&addr,addrlen))==-1){perror("udp_popreq - sendto\n");exit(1);}
             pop[pop_tracker].key++;//increments counter everytime a pop address is sent on a POPRESP
-
-            //LOGIC TO KNOW WHEN TO CALL A POP QUERY
-            /*if (pop[pop_tracker].key == input.tcpsessions + 1 && !Pquery_active){//arbitrary decision to send a POP QUERY if a pop has been used 3 times
-                if (clients < input.tcpsessions){
-                    bestpops = input.bestpops - 1;
-                    strcpy(pop[0].ipport.ip, input.ipaddr);
-                    strcpy(pop[0].ipport.port, input.tport);
-                    pop[0].key = 0;
-                }else bestpops = input.bestpops;
-                if (bestpops > 0){
-                    memset(buffer, '\0', strlen(buffer));
-                    sprintf(buffer, "%04X", ++query_num);
-                    ptp_encoder("PQ", buffer, bestpops, 0, NULL); 
-                    printf("buffer - %s\n", buffer);
-                    Pquery_active = true;
-                    PQ_time = time(NULL);
-                    send_downstream(&clients, buffer);}
-            }*/
 
             if (pop_tracker+1 >= input.bestpops || pop[pop_tracker+1].key == -1) pop_tracker = 0; 
             else pop_tracker++;
         }
 
         if (node.udp.ROOTIS){node.udp.ROOTIS = false;
-            strcpy(buffer, "POPREQ\n"); 
-            udp_client(0, buffer, message.address);
-            strcpy(input.uplink.ip, message.address.ip);strcpy(input.uplink.port, message.address.port);
-            udp_decoder(buffer, &message); 
-            ctcp_fd = tcp_client(message.address);if(input.debug)printf("Connected to point of presence\n");
+            if(input.debug)printf("ROOTIS detected\n");
+            strcpy(buffer, "POPREQ\n");counter = 0;
+            strcpy(D_message.address.ip, message.address.ip);
+            strcpy(D_message.address.port, message.address.port); 
+            strcpy(T_buffer, buffer);
+            while(1){
+                strcpy(buffer, T_buffer);
+                udp_client(0, buffer, D_message.address);
+                udp_decoder(buffer, &message); 
+                ctcp_fd = tcp_client(message.address);
+                strcpy(input.uplink.ip, message.address.ip);strcpy(input.uplink.port, message.address.port);
+                if (ctcp_fd != -1) break;
+                if (counter > 4) exit(1);
+                else counter++;
+                sleep(1);
+                memset(&message, 0, sizeof(message));memset(buffer, 0, BUFFER_SIZE);
+            }
+            if(input.debug)printf("Connected to point of presence\n");
+        }
+
+        if (node.udp.POPRESP){node.udp.POPRESP = false;
+            if(input.debug)printf("POPRESP detected\n%s", buffer);
         }
 
         if (node.udp.URROOT){node.udp.URROOT = false;is_root = true;
+            if(input.debug)printf("URROOT detected\n");
             ctcp_fd = tcp_client(message.address);
             sudp_fd = udp_server();printf("udp access server created on socket %d\n", sudp_fd); 
             strcpy(pop[0].ipport.ip, input.ipaddr);
@@ -428,9 +378,26 @@ int main (int argc, char **argv)
         if(is_root){
             if (time(NULL) - start >= input.tsecs){
                 start = time(NULL);
-                //if(input.debug)printf("Elapsed 5 seconds\n");
+                if(input.debug)printf("Root server update\n");
                 udp_encoder("WHOISROOT", buffer, NULL); //builds WHOISROOT protocol message
                 udp_client(0, buffer, input.rs_id);
+
+                if (!Pquery_active){
+                if (clients < input.tcpsessions){
+                    bestpops = input.bestpops - 1;
+                    strcpy(pop[0].ipport.ip, input.ipaddr);
+                    strcpy(pop[0].ipport.port, input.tport);
+                    pop[0].key = 0;
+                }else bestpops = input.bestpops;
+                if (bestpops > 0){
+                    memset(buffer, '\0', strlen(buffer));
+                    sprintf(buffer, "%04X", ++query_num);
+                    ptp_encoder("PQ", buffer, bestpops, 0, NULL); 
+                    printf("buffer - %s\n", buffer);
+                    Pquery_active = true;
+                    PQ_time = time(NULL);
+                    send_downstream(&clients, buffer);}
+                }
             }
             if (Pquery_active) if (time(NULL) - PQ_time >= 2){Pquery_active = false;if(input.debug)printf("PQ timeout\n");}
         }
@@ -439,7 +406,8 @@ int main (int argc, char **argv)
             Tquery_active = false;if(input.debug)printf("TQ timeout\n");
             printf("\n%s:%s:%s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
             printf("%s:%s (%d", input.ipaddr, input.tport, input.tcpsessions);
-            for (int i = 0; i < input.tcpsessions; i++)if (new_fds[i].fd != -1) printf(" %s:%s", new_fds[i].ipport.ip, new_fds[i].ipport.port);
+            for (int i = 0; i < input.tcpsessions; i++)if (new_fds[i].fd != -1) 
+                printf(" %s:%s", new_fds[i].ipport.ip, new_fds[i].ipport.port);
             printf(")\n");
             for (int i = 0; i < 64; i++){
                 if (Tvec[i].tcpsessions > 0){
@@ -451,6 +419,11 @@ int main (int argc, char **argv)
                     memset(&Tvec[i].self, '\0', sizeof (struct ipport));}
             }printf("\n");Tvec_C=0;
         }
+
+        //Clears buffers for the next cicle
+        memset(buffer, '\0', BUFFER_SIZE);memset(D_buffer, '\0', BUFFER_SIZE);memset(T_buffer, 0, BUFFER_SIZE);
+        memset(&message, '\0', sizeof message);
+        memset(&message, '\0', sizeof D_message);
     }
     return 0;
 }
@@ -485,9 +458,8 @@ int Array_Addipport (struct client *vector, int fd, struct ipport ipport){
 
 void send_downstream (int * clients, char * buffer){
     for (int i = 0; i < input.tcpsessions; i++)
-        if (new_fds[i].fd != -1)
-            if (write(new_fds[i].fd, buffer, strlen(buffer)) == -1){
-                printf("Detected a connection failure, closing...\n");
+        if (new_fds[i].fd != -1 && write(new_fds[i].fd, buffer, strlen(buffer)) == -1){
+                if(input.debug)printf("Detected a connection failure, closing...\n");
                 close(new_fds[i].fd); clients--;
                 Array_Rem(new_fds, new_fds[i].fd);}
 }
