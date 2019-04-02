@@ -66,14 +66,12 @@ int main (int argc, char **argv)
         if (ctcp_fd != -1 && !yetToReadU && !yetToReadD) counter=select(maxfd+1,&rfds, NULL, NULL, &timeout);
         else FD_ZERO(&rfds);
 
-        if(yetToReadU) {if(input.debug)printf("There was something left to read...\n");
+        if(yetToReadU) {if(input.debug)printf("There was something left to read above...\n");
             yetToReadU = checkForMany(pre_buffer, buffer);
-            printf("yTrU -> %d\n", yetToReadU);
             ptp_decoder(buffer, &message, 0);
         }
-        if(yetToReadD) {if(input.debug)printf("There was even more left to read...\n");
+        if(yetToReadD) {if(input.debug)printf("There was something left to read below...\n");
             yetToReadD = checkForMany(pre_D_buffer, D_buffer);
-            printf("yTrD -> %d\n", yetToReadD);
             ptp_decoder(D_buffer, &D_message, 0);
         }
         
@@ -97,12 +95,12 @@ int main (int argc, char **argv)
                     if (!input.SF){input.SF = true;send_downstream(&clients, "SF\n");}
                 }else{
                     yetToReadU = checkForMany(pre_buffer, buffer);
-                    printf("yTrU -> %d\n", yetToReadU);
                     ptp_decoder(buffer, &message, 0);
                 }
             }else{if(input.debug)printf("Uplink connection failure\n");
                 close(ctcp_fd);ctcp_fd = -1;
                 if (input.SF) send_downstream(&clients, "BS\n");
+                input.SF = false;
                 udp_encoder("WHOISROOT", buffer, NULL); //builds WHOISROOT protocol message
                 udp_client(0, buffer, input.rs_id); //sends the built message
                 udp_decoder(buffer, &message); //decodes received message
@@ -142,7 +140,6 @@ int main (int argc, char **argv)
                 if((n=read(new_fds[i].fd,pre_D_buffer,BUFFER_SIZE))!=0){
                     if(n==-1){perror("downlink - read()");exit(1);}
                     yetToReadD = checkForMany(pre_D_buffer, D_buffer);
-                    printf("yTrD -> %d\n", yetToReadD);
                     ptp_decoder(D_buffer, &D_message, new_fds[i].fd);
                 }else{if(input.debug)printf("Detected a connection failure, closing...\n");
                     close(new_fds[i].fd);clients--;
@@ -223,7 +220,6 @@ int main (int argc, char **argv)
             }else{
                 if (query_num == D_message.keys[0] && bestpops > 0){bestpops--;
                     if(input.debug)printf("POP accepted\n");
-                    printf("Sending.. %s\n", buffer);
                     write(ctcp_fd, D_buffer, strlen(D_buffer));
                 }else if(input.debug)printf("POP not needed\n");
             }
@@ -354,7 +350,7 @@ int main (int argc, char **argv)
         if (node.udp.URROOT){node.udp.URROOT = false;is_root = true;
             if(input.debug)printf("URROOT detected\n");
             ctcp_fd = tcp_client(message.address);
-            sudp_fd = udp_server();printf("udp access server created on socket %d\n", sudp_fd); 
+            sudp_fd = udp_server();
             strcpy(pop[0].ipport.ip, input.ipaddr);
             strcpy(pop[0].ipport.port, input.tport);
             pop[0].key = 0;
@@ -411,11 +407,11 @@ int main (int argc, char **argv)
             }printf("\n");Tvec_C=0;
         }
 
+        //Clears stuff for the next cicle
         memset(&message, 0, sizeof message);
         memset(&D_message, 0, sizeof message);
         memset(buffer, 0, BUFFER_SIZE);memset(D_buffer, 0, BUFFER_SIZE);memset(T_buffer, 0, BUFFER_SIZE);
         if(yetToReadD || yetToReadU) continue;
-        //Clears stuff for the next cicle
         memset(pre_buffer, 0, BUFFER_SIZE);memset(pre_D_buffer, 0, BUFFER_SIZE);
     }
     return 0;

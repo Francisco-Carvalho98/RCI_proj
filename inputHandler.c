@@ -29,6 +29,7 @@ void inputHandler (char **argv, int argc){
         strcpy(buffer, "DUMP\n");
         udp_client(0, buffer, input.rs_id);
         udp_decoder(buffer, &message);
+        printf("%s\n", buffer);
         exit(0);}
 
     // LOOKS FOR FLAGS

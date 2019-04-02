@@ -152,7 +152,6 @@ int checkForMany(char *yetToProcess, char *readyToRead){
     int size = 0;
     char *token = NULL;
     
-    printf("ORIGINAL:\n%s\n", yetToProcess);
     if (!strncasecmp(yetToProcess, "DA", 2)){
         sscanf(yetToProcess, "%*s %X", &size);
         token = &yetToProcess[0]; token += 8+size;
@@ -162,19 +161,15 @@ int checkForMany(char *yetToProcess, char *readyToRead){
             if(yetToProcess[i] == '\n' && yetToProcess[i+1] == '\n'){ 
                 token = &yetToProcess[i+2];
                 strncpy(readyToRead, yetToProcess, i+2);
-                printf("READY TO BE DECODED:\n%s\n", readyToRead);
-                break;
-            }
-    }else{
+                break;}
+    }else 
         for (int i = 0; yetToProcess[i] != '\0'; i++)
             if(yetToProcess[i] == '\n'){
                 token = &yetToProcess[i+1];
                 strncpy(readyToRead, yetToProcess, i+1);
-                printf("READY TO BE DECODED:\n%s\n", readyToRead);
                 break;}         
-    }
+                
     strcpy(yetToProcess, token);
-    printf("STILL LEFT TO PROCESS:\n%s\n", yetToProcess);
     if (token != NULL && !strcasecmp(yetToProcess, "\0")) return 0;
     else if (token == NULL){printf("This shouldnt happen -> checkForMany()\n");exit(1);}
     else return 1;
