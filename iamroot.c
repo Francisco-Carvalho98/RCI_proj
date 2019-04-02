@@ -2,7 +2,7 @@
 
 int main (int argc, char **argv)
 {
-    char buffer[BUFFER_SIZE], D_buffer[BUFFER_SIZE],T_buffer[BUFFER_SIZE], *token,*token2;
+    char buffer[BUFFER_SIZE], D_buffer[BUFFER_SIZE],T_buffer[BUFFER_SIZE], *token;
     char pre_buffer[BUFFER_SIZE], pre_D_buffer[BUFFER_SIZE];
     memset(pre_buffer, 0, BUFFER_SIZE);memset(pre_D_buffer, 0, BUFFER_SIZE);
     memset(buffer, 0, BUFFER_SIZE);memset(D_buffer, 0, BUFFER_SIZE);memset(T_buffer, 0, BUFFER_SIZE);
@@ -243,41 +243,27 @@ int main (int argc, char **argv)
 
         if (node.ptp.TQ){node.ptp.TQ = false;
             if(input.debug)printf("TQ detected\n%s", buffer);
-            token = strtok(buffer, "\n");  
-            while (token != NULL){
-                strcpy(T_buffer, token);strcat(T_buffer, "\n");
-                sscanf(token, "%*s %[^:]%*[:]%s", message.address.ip, message.address.port);
-                if (!strcasecmp(message.address.ip, input.ipaddr) && !strcasecmp(message.address.port, input.tport)){
-                    ptp_encoder("TR", T_buffer, 0, 0, NULL);
-                    write(ctcp_fd, T_buffer, strlen(T_buffer));
-                }else send_downstream(&clients, T_buffer);
-                token = strtok(NULL, "\n");
-                memset(&message, 0, sizeof message);memset(T_buffer, 0, BUFFER_SIZE);
-            }
+            if (!strcasecmp(message.address.ip, input.ipaddr) && !strcasecmp(message.address.port, input.tport)){
+                memset(buffer, 0, BUFFER_SIZE);
+                ptp_encoder("TR", buffer, 0, 0, NULL);
+                write(ctcp_fd, buffer, strlen(buffer));
+            }else send_downstream(&clients, buffer);        
         }
 
         if (node.ptp.TR){node.ptp.TR = false;TQ_time=time(NULL);      
             if (input.debug)printf("TR detected\n%s", D_buffer);
-            if (Tquery_active){   
-                token2 = &D_buffer[0];
-                do{     
-                    for (int i = 0; token2[i] != '\0'; i++) 
-                        if (token2[i] == '\n' && token2[i+1] == '\n'){
-                            strncpy(T_buffer, token2, i+2);
-                            token2 = &token2[i+2];
-                            break;}     
-                    sscanf(T_buffer, "%*s %[^:]%*[:]%s %d",Tvec[Tvec_C].self.ip, Tvec[Tvec_C].self.port, &Tvec[Tvec_C].tcpsessions);
-                    Tvec[Tvec_C].ipport = (struct ipport*)calloc(Tvec[Tvec_C].tcpsessions, sizeof(struct ipport));
-                    token = strtok(T_buffer, "\n");//skips the first line
-                    token = strtok(NULL, "\n");//gets the second line or NULL if non existing
-                    for (int i = 0; token != NULL; i++){
-                        sscanf(token, "%[^:]%*[:]%s", Tvec[Tvec_C].ipport[i].ip, Tvec[Tvec_C].ipport[i].port);
-                        memset(T_buffer, 0, strlen(T_buffer));
-                        ptp_encoder("TQ", T_buffer, 0, 0, &Tvec[Tvec_C].ipport[i]);
-                        send_downstream(&clients, T_buffer);
-                        token = strtok(NULL, "\n");
-                    }Tvec_C++;memset(T_buffer, 0, BUFFER_SIZE);
-                }while(strcasecmp(token2, ""));
+            if (Tquery_active){     
+                sscanf(D_buffer, "%*s %[^:]%*[:]%s %d",Tvec[Tvec_C].self.ip, Tvec[Tvec_C].self.port, &Tvec[Tvec_C].tcpsessions);
+                Tvec[Tvec_C].ipport = (struct ipport*)calloc(Tvec[Tvec_C].tcpsessions, sizeof(struct ipport));
+                token = strtok(D_buffer, "\n");//skips the first line
+                token = strtok(NULL, "\n");//gets the second line or NULL if non existing
+                for (int i = 0; token != NULL; i++){
+                    sscanf(token, "%[^:]%*[:]%s", Tvec[Tvec_C].ipport[i].ip, Tvec[Tvec_C].ipport[i].port);
+                    memset(D_buffer, 0, strlen(D_buffer));
+                    ptp_encoder("TQ", D_buffer, 0, 0, &Tvec[Tvec_C].ipport[i]);
+                    send_downstream(&clients, D_buffer);
+                    token = strtok(NULL, "\n");
+                }Tvec_C++;
             }else write(ctcp_fd, D_buffer, strlen(D_buffer));
         }
 

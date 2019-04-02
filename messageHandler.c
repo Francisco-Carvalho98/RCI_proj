@@ -109,7 +109,6 @@ void ptp_decoder (char *message, struct message *decoded, int key){
     else if (!strcasecmp(command, "TR")){node.ptp.TR = true;return;}
     else if (!strcasecmp(command, "SF")){node.ptp.SF = true;return;}
     else if (!strcasecmp(command, "BS")){node.ptp.BS = true;return;}
-    else if (!strcasecmp(command, "TQ")){node.ptp.TQ = true;return;}
 
     //catches PR
     if(sscanf(message, "%s %s %s %s", command, args[0], args[1], args[2]) == 4){
@@ -137,6 +136,9 @@ void ptp_decoder (char *message, struct message *decoded, int key){
         else if(!strcasecmp(command, "RE")){node.ptp.RE = true;
             sscanf(args[0], "%[^:]%*[:]%s", decoded->address.ip, decoded->address.port);
         }
+        else if(!strcasecmp(command, "TQ")){node.ptp.TQ = true;
+            sscanf(args[0], "%[^:]%*[:]%s", decoded->address.ip, decoded->address.port);
+        }
         else if(!strcasecmp(command, "NP")){node.ptp.NP = true;
             sscanf(args[0], "%[^:]%*[:]%s", decoded->address.ip, decoded->address.port);
             Array_Addipport(new_fds, key, decoded->address);
@@ -160,7 +162,6 @@ int checkForMany(char *yetToProcess, char *readyToRead){
             if(yetToProcess[i] == '\n' && yetToProcess[i+1] == '\n'){ 
                 token = &yetToProcess[i+2];
                 strncpy(readyToRead, yetToProcess, i+2);
-                printf("ORIGINAL\n%s\n", yetToProcess);
                 printf("READY TO BE DECODED:\n%s\n", readyToRead);
                 break;
             }
@@ -169,7 +170,6 @@ int checkForMany(char *yetToProcess, char *readyToRead){
             if(yetToProcess[i] == '\n'){
                 token = &yetToProcess[i+1];
                 strncpy(readyToRead, yetToProcess, i+1);
-                printf("ORIGINAL\n%s\n", yetToProcess);
                 printf("READY TO BE DECODED:\n%s\n", readyToRead);
                 break;}         
     }
