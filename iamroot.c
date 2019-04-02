@@ -3,19 +3,22 @@
 int main (int argc, char **argv)
 {
     char buffer[BUFFER_SIZE], D_buffer[BUFFER_SIZE],T_buffer[BUFFER_SIZE], *token,*token2;
+    char pre_buffer[BUFFER_SIZE], pre_D_buffer[BUFFER_SIZE];
+    memset(pre_buffer, 0, BUFFER_SIZE);memset(pre_D_buffer, 0, BUFFER_SIZE);
     memset(buffer, 0, BUFFER_SIZE);memset(D_buffer, 0, BUFFER_SIZE);memset(T_buffer, 0, BUFFER_SIZE);
     struct message message, D_message;
+    memset(&message, '\0', sizeof message);memset(&D_message, '\0', sizeof message);
     int ctcp_fd=-1, sudp_fd=-1, stcp_fd=-1;
     
     //takes care of program input args or sets to default if not specified
     inputHandler(argv, argc);
 
     //allocs client struct vector to the number of tcpsessions supported by node
-    new_fds = (struct client*)calloc(input.tcpsessions, sizeof(struct client));
+    if ((new_fds = (struct client*)calloc(input.tcpsessions, sizeof(struct client))) == NULL){printf("Couldnt allocate memory\n");exit(1);}
     for (int i = 0; i < input.tcpsessions; i++) new_fds[i].fd =-1;
 
     //allocs pop struct vector to the number of bestpops
-    pop = (struct pop*)calloc(input.bestpops, sizeof(struct pop));
+    if ((pop = (struct pop*)calloc(input.bestpops, sizeof(struct pop))) == NULL){printf("Couldnt allocate memory\n");exit(1);}
     for (int i = 0; i < input.bestpops; i++) pop[i].key =-1;
 
     udp_encoder("WHOISROOT", buffer, NULL); //builds WHOISROOT protocol message
@@ -34,7 +37,7 @@ int main (int argc, char **argv)
     strcpy(new_fds[0].ipport.port, input.tport);
 
     fd_set rfds;
-    int counter, n, addrlen, newfd=-1, maxfd=-1, clients = 0, pop_tracker = 0, bestpops = 0;
+    int counter, n, addrlen, newfd=-1, maxfd=-1, clients = 0, bestpops = 0, yetToReadU = 0, yetToReadD = 0;
     unsigned short query_num = -1;
     struct sockaddr_in addr;
     struct timeval timeout;
@@ -60,11 +63,24 @@ int main (int argc, char **argv)
         if(!(maxfd=Array_Max(new_fds))) maxfd = ctcp_fd > sudp_fd ? ctcp_fd : sudp_fd;
         maxfd = maxfd > sudp_fd ? maxfd : sudp_fd;
 
-        if (ctcp_fd != -1) counter=select(maxfd+1,&rfds, NULL, NULL, &timeout);
+        if (ctcp_fd != -1 && !yetToReadU && !yetToReadD) counter=select(maxfd+1,&rfds, NULL, NULL, &timeout);
+        else FD_ZERO(&rfds);
+
+        if(yetToReadU) {if(input.debug)printf("There was something left to read...\n");
+            yetToReadU = checkForMany(pre_buffer, buffer);
+            printf("yTrU -> %d\n", yetToReadU);
+            ptp_decoder(buffer, &message, 0);
+        }
+        if(yetToReadD) {if(input.debug)printf("There was even more left to read...\n");
+            yetToReadD = checkForMany(pre_D_buffer, D_buffer);
+            printf("yTrD -> %d\n", yetToReadD);
+            ptp_decoder(D_buffer, &D_message, 0);
+        }
+        
         if(counter<0){perror("select()"); exit(1);}
         else if(counter == 0){
             if(input.debug && ctcp_fd != -1)printf("select timeout\n");
-            FD_ZERO(&rfds);}
+        }
 
         /*
         *
@@ -74,11 +90,16 @@ int main (int argc, char **argv)
 
         //checks for uplink connection packets ------ TCP 
         if(FD_ISSET(ctcp_fd,&rfds)){
-            if((n=read(ctcp_fd,buffer,BUFFER_SIZE))!=0){if(n==-1){perror("uplink - read()");exit(1);}
+            if((n=read(ctcp_fd,pre_buffer,BUFFER_SIZE))!=0){if(n==-1){perror("uplink - read()");exit(1);}
                 if(is_root){node.ptp.DA = true;
+                    strcpy(buffer, pre_buffer);
                     ptp_encoder("DA", buffer, n, 0, NULL);
                     if (!input.SF){input.SF = true;send_downstream(&clients, "SF\n");}
-                }else ptp_decoder(buffer, &message, 0);
+                }else{
+                    yetToReadU = checkForMany(pre_buffer, buffer);
+                    printf("yTrU -> %d\n", yetToReadU);
+                    ptp_decoder(buffer, &message, 0);
+                }
             }else{if(input.debug)printf("Uplink connection failure\n");
                 close(ctcp_fd);ctcp_fd = -1;
                 if (input.SF) send_downstream(&clients, "BS\n");
@@ -97,7 +118,6 @@ int main (int argc, char **argv)
                 Array_Add(new_fds,newfd);  
                 ptp_encoder("WE", buffer, 0, 0, NULL);
                 write(newfd, buffer, strlen(buffer));//if(input.debug)printf("Sending Welcome message\n");
-                if(input.SF)write(newfd, "SF\n", 3);
                 clients++;}
             else{if(input.debug)printf("Cant accept more clients, redirecting...\n");
                 ptp_encoder("RE", buffer, 0, 0, NULL);
@@ -119,8 +139,10 @@ int main (int argc, char **argv)
         //check for downlink connection packets ----- TCP
         for (int i = 0; i < input.tcpsessions; i++)
             if (FD_ISSET(new_fds[i].fd, &rfds)){
-                if((n=read(new_fds[i].fd,D_buffer,BUFFER_SIZE))!=0){
+                if((n=read(new_fds[i].fd,pre_D_buffer,BUFFER_SIZE))!=0){
                     if(n==-1){perror("downlink - read()");exit(1);}
+                    yetToReadD = checkForMany(pre_D_buffer, D_buffer);
+                    printf("yTrD -> %d\n", yetToReadD);
                     ptp_decoder(D_buffer, &D_message, new_fds[i].fd);
                 }else{if(input.debug)printf("Detected a connection failure, closing...\n");
                     close(new_fds[i].fd);clients--;
@@ -146,8 +168,8 @@ int main (int argc, char **argv)
         */ 
         if (node.ptp.WE){node.ptp.WE = false;
             if(input.debug)printf("WE detected\n%s", buffer);
-            token = strchr(buffer, '\n');token++; 
-            if (!strncasecmp(token, "SF", 2)) node.ptp.SF = true;
+            /*token = strchr(buffer, '\n');token++; 
+            if (!strncasecmp(token, "SF", 2)) node.ptp.SF = true;*/
             ptp_encoder("NP", buffer, 0, 0, NULL);
             write(ctcp_fd, buffer, strlen(buffer));
             //CHECKS TO SEE IF STREAM IS THE DESIRED ONE DONE IN ptp_decoder
@@ -176,11 +198,9 @@ int main (int argc, char **argv)
             if(input.debug)printf("PQ detected\n%s", buffer);
             query_num = message.keys[0];
             bestpops = message.keys[1];
-            if (clients < input.tcpsessions){
-                bestpops--;
+            if (clients < input.tcpsessions){bestpops--;
                 memset(buffer, '\0', strlen(buffer));
                 ptp_encoder("PR", buffer, input.tcpsessions - clients, query_num, NULL);
-                printf("buffer - %s\n", buffer);
                 write(ctcp_fd, buffer, strlen(buffer));
             }      
             if (bestpops > 0){
@@ -194,21 +214,18 @@ int main (int argc, char **argv)
         if (node.ptp.PR){node.ptp.PR = false;
             if(input.debug)printf("PR detected\n%s", D_buffer);
             if (is_root){
-                if (Pquery_active){
-                    printf("bpops %d\n", bestpops);
+                if (Pquery_active){if(input.debug)printf("POP accepted\n");
                     strcpy(pop[input.bestpops - bestpops].ipport.ip, D_message.address.ip);
                     strcpy(pop[input.bestpops - bestpops].ipport.port, D_message.address.port);
-                    pop[input.bestpops - bestpops].key = 0;
-                    bestpops--;
-                    for (int i = 0; i < input.bestpops; i++) 
-                        printf("%s:%s -> %d\n", pop[i].ipport.ip, pop[i].ipport.port, pop[i].key);
+                    pop[input.bestpops - bestpops].key = 0;bestpops--;
                     if (bestpops == 0) Pquery_active = false;
-                }
+                }else if(input.debug)printf("POP not needed\n");
             }else{
-                if (query_num == D_message.keys[0] && bestpops > 0){
-                    bestpops--;
+                if (query_num == D_message.keys[0] && bestpops > 0){bestpops--;
+                    if(input.debug)printf("POP accepted\n");
+                    printf("Sending.. %s\n", buffer);
                     write(ctcp_fd, D_buffer, strlen(D_buffer));
-                }
+                }else if(input.debug)printf("POP not needed\n");
             }
         }
 
@@ -225,7 +242,7 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.TQ){node.ptp.TQ = false;
-            if(input.debug)printf("TQ detected\n%sTQ end\n", buffer);
+            if(input.debug)printf("TQ detected\n%s", buffer);
             token = strtok(buffer, "\n");  
             while (token != NULL){
                 strcpy(T_buffer, token);strcat(T_buffer, "\n");
@@ -240,7 +257,7 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.TR){node.ptp.TR = false;TQ_time=time(NULL);      
-            if (input.debug)printf("TR detected\n%sTR end\n", D_buffer);
+            if (input.debug)printf("TR detected\n%s", D_buffer);
             if (Tquery_active){   
                 token2 = &D_buffer[0];
                 do{     
@@ -259,11 +276,9 @@ int main (int argc, char **argv)
                         ptp_encoder("TQ", T_buffer, 0, 0, &Tvec[Tvec_C].ipport[i]);
                         send_downstream(&clients, T_buffer);
                         token = strtok(NULL, "\n");
-                    }                
-                    Tvec_C++;
+                    }Tvec_C++;memset(T_buffer, 0, BUFFER_SIZE);
                 }while(strcasecmp(token2, ""));
-            }
-            else write(ctcp_fd, D_buffer, strlen(D_buffer));
+            }else write(ctcp_fd, D_buffer, strlen(D_buffer));
         }
 
 
@@ -325,12 +340,8 @@ int main (int argc, char **argv)
         if (node.udp.POPREQ){node.udp.POPREQ = false; 
             if(input.debug)printf("POPREQ detected\n");
             memset(buffer, '\0', strlen(buffer));
-            udp_encoder("POPRESP", buffer, &(pop[pop_tracker].ipport));
+            udp_encoder("POPRESP", buffer, &(pop[0].ipport));
             if((n=sendto(sudp_fd,buffer,strlen(buffer),0,(struct sockaddr*)&addr,addrlen))==-1){perror("udp_popreq - sendto\n");exit(1);}
-            pop[pop_tracker].key++;//increments counter everytime a pop address is sent on a POPRESP
-
-            if (pop_tracker+1 >= input.bestpops || pop[pop_tracker+1].key == -1) pop_tracker = 0; 
-            else pop_tracker++;
         }
 
         if (node.udp.ROOTIS){node.udp.ROOTIS = false;
@@ -348,14 +359,10 @@ int main (int argc, char **argv)
                 if (ctcp_fd != -1) break;
                 if (counter > 4) exit(1);
                 else counter++;
-                sleep(1);
+                //sleep(1);
                 memset(&message, 0, sizeof(message));memset(buffer, 0, BUFFER_SIZE);
             }
             if(input.debug)printf("Connected to point of presence\n");
-        }
-
-        if (node.udp.POPRESP){node.udp.POPRESP = false;
-            if(input.debug)printf("POPRESP detected\n%s", buffer);
         }
 
         if (node.udp.URROOT){node.udp.URROOT = false;is_root = true;
@@ -381,8 +388,8 @@ int main (int argc, char **argv)
                 if(input.debug)printf("Root server update\n");
                 udp_encoder("WHOISROOT", buffer, NULL); //builds WHOISROOT protocol message
                 udp_client(0, buffer, input.rs_id);
-
-                if (!Pquery_active){
+                
+                if (!Pquery_active && !Tquery_active){
                 if (clients < input.tcpsessions){
                     bestpops = input.bestpops - 1;
                     strcpy(pop[0].ipport.ip, input.ipaddr);
@@ -393,16 +400,14 @@ int main (int argc, char **argv)
                     memset(buffer, '\0', strlen(buffer));
                     sprintf(buffer, "%04X", ++query_num);
                     ptp_encoder("PQ", buffer, bestpops, 0, NULL); 
-                    printf("buffer - %s\n", buffer);
-                    Pquery_active = true;
-                    PQ_time = time(NULL);
+                    Pquery_active = true;PQ_time = time(NULL);
                     send_downstream(&clients, buffer);}
                 }
             }
             if (Pquery_active) if (time(NULL) - PQ_time >= 2){Pquery_active = false;if(input.debug)printf("PQ timeout\n");}
         }
             
-        if (Tquery_active) if (time(NULL) - TQ_time >= 1){
+        if (Tquery_active) if (time(NULL) - TQ_time >= 2){
             Tquery_active = false;if(input.debug)printf("TQ timeout\n");
             printf("\n%s:%s:%s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
             printf("%s:%s (%d", input.ipaddr, input.tport, input.tcpsessions);
@@ -420,10 +425,12 @@ int main (int argc, char **argv)
             }printf("\n");Tvec_C=0;
         }
 
-        //Clears buffers for the next cicle
-        memset(buffer, '\0', BUFFER_SIZE);memset(D_buffer, '\0', BUFFER_SIZE);memset(T_buffer, 0, BUFFER_SIZE);
-        memset(&message, '\0', sizeof message);
-        memset(&message, '\0', sizeof D_message);
+        memset(&message, 0, sizeof message);
+        memset(&D_message, 0, sizeof message);
+        memset(buffer, 0, BUFFER_SIZE);memset(D_buffer, 0, BUFFER_SIZE);memset(T_buffer, 0, BUFFER_SIZE);
+        if(yetToReadD || yetToReadU) continue;
+        //Clears stuff for the next cicle
+        memset(pre_buffer, 0, BUFFER_SIZE);memset(pre_D_buffer, 0, BUFFER_SIZE);
     }
     return 0;
 }

@@ -27,7 +27,7 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
     //catches a ROOTIS, POPRESP and non empty STREAM
     if (sscanf(message, "%s %s %s", decoded->command, decoded->args[0], decoded->args[1]) == 3){
         if (!strcasecmp(decoded->command, "ROOTIS")) node.udp.ROOTIS = true;
-        else if (!strcasecmp(decoded->command, "POPRESP"))node.udp.POPRESP = true;
+        else if (!strcasecmp(decoded->command, "POPRESP"));
         else if (!strcasecmp(decoded->command, "STREAMS")){node.udp.STREAMS = true;return;}
         else{printf("Unexpected error - udp\n");exit(EXIT_FAILURE);}
 
@@ -121,7 +121,7 @@ void ptp_decoder (char *message, struct message *decoded, int key){
     //catches PQ
     if(sscanf(message, "%s %hX %hd", command, &decoded->keys[0], &decoded->keys[1]) == 3){
         if (!strcasecmp(command, "PQ")){node.ptp.PQ = true;return;}       
-        else{printf("uh\n"); printf("Bad ptp message format\n%s\n", message);exit(1);}} 
+        else{printf("Bad ptp message format\n%s\n", message);exit(1);}} 
     
     //catches WE, NP, RE
     if(sscanf(message, "%s %s", command, args[0]) == 2){
@@ -143,4 +143,39 @@ void ptp_decoder (char *message, struct message *decoded, int key){
             if(input.SF) write(key, "SF\n", 3);
         }
         else{printf("Bad ptp message format\n%s\n", message);exit(1);}}
+}
+
+int checkForMany(char *yetToProcess, char *readyToRead){
+
+    int size = 0;
+    char *token = NULL;
+    
+    printf("ORIGINAL:\n%s\n", yetToProcess);
+    if (!strncasecmp(yetToProcess, "DA", 2)){
+        sscanf(yetToProcess, "%*s %X", &size);
+        token = &yetToProcess[0]; token += 8+size;
+        strncpy(readyToRead, yetToProcess, 8+size);
+    }else if(!strncasecmp(yetToProcess, "TR", 2)){
+        for (int i = 0; yetToProcess[i] != '\0'; i++)
+            if(yetToProcess[i] == '\n' && yetToProcess[i+1] == '\n'){ 
+                token = &yetToProcess[i+2];
+                strncpy(readyToRead, yetToProcess, i+2);
+                printf("ORIGINAL\n%s\n", yetToProcess);
+                printf("READY TO BE DECODED:\n%s\n", readyToRead);
+                break;
+            }
+    }else{
+        for (int i = 0; yetToProcess[i] != '\0'; i++)
+            if(yetToProcess[i] == '\n'){
+                token = &yetToProcess[i+1];
+                strncpy(readyToRead, yetToProcess, i+1);
+                printf("ORIGINAL\n%s\n", yetToProcess);
+                printf("READY TO BE DECODED:\n%s\n", readyToRead);
+                break;}         
+    }
+    strcpy(yetToProcess, token);
+    printf("STILL LEFT TO PROCESS:\n%s\n", yetToProcess);
+    if (token != NULL && !strcasecmp(yetToProcess, "\0")) return 0;
+    else if (token == NULL){printf("This shouldnt happen -> checkForMany()\n");exit(1);}
+    else return 1;
 }

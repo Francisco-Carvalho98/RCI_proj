@@ -131,12 +131,13 @@ int udp_server ();
 int tcp_client(struct ipport);
 int tcp_server ();
 
-//packetHandler.c
+//messageHandler.c
 void udp_encoder (char *, char *, struct ipport *);
 void udp_decoder (char *, struct message *);
-void ptp_encoder (char*, char*, int, int, struct ipport *);
-void ptp_decoder (char*, struct message *, int);
-void user_decoder (char*);
+void ptp_encoder (char *, char *, int, int, struct ipport *);
+void ptp_decoder (char *, struct message *, int);
+void user_decoder (char *);
+int checkForMany(char *, char *);
 
 //global vars declaration
 struct pop *pop;
