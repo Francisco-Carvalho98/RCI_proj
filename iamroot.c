@@ -77,7 +77,7 @@ int main (int argc, char **argv)
         
         if(counter<0){perror("select()"); exit(1);}
         else if(counter == 0){
-            if(input.debug && ctcp_fd != -1)printf("select timeout\n");
+            if(input.debug && ctcp_fd != -1) printf("select timeout\n");
         }
 
         /*
@@ -165,8 +165,6 @@ int main (int argc, char **argv)
         */ 
         if (node.ptp.WE){node.ptp.WE = false;
             if(input.debug)printf("WE detected\n%s", buffer);
-            /*token = strchr(buffer, '\n');token++; 
-            if (!strncasecmp(token, "SF", 2)) node.ptp.SF = true;*/
             ptp_encoder("NP", buffer, 0, 0, NULL);
             write(ctcp_fd, buffer, strlen(buffer));
             //CHECKS TO SEE IF STREAM IS THE DESIRED ONE DONE IN ptp_decoder
@@ -178,7 +176,7 @@ int main (int argc, char **argv)
         }
 
         if (node.ptp.DA){node.ptp.DA = false;
-            if(input.debug)printf("DA detected\n");         
+            //if(input.debug)printf("DA detected\n");         
             if(input.display){ 
                 token = &buffer[0]; token += 8;
                 if(input.format) printf("%s\n", token);
@@ -322,7 +320,13 @@ int main (int argc, char **argv)
         if (node.udp.POPREQ){node.udp.POPREQ = false; 
             if(input.debug)printf("POPREQ detected\n");
             memset(buffer, '\0', strlen(buffer));
-            udp_encoder("POPRESP", buffer, &(pop[0].ipport));
+            while(1){
+                srand(time(0));
+                if (pop[rand() % input.bestpops].key != -1){ 
+                    udp_encoder("POPRESP", buffer, &(pop[0].ipport));
+                    break;
+                }else continue;
+            }
             if((n=sendto(sudp_fd,buffer,strlen(buffer),0,(struct sockaddr*)&addr,addrlen))==-1){perror("udp_popreq - sendto\n");exit(1);}
         }
 
@@ -369,21 +373,19 @@ int main (int argc, char **argv)
                 start = time(NULL);
                 if(input.debug)printf("Root server update\n");
                 udp_encoder("WHOISROOT", buffer, NULL); //builds WHOISROOT protocol message
-                udp_client(0, buffer, input.rs_id);
+                udp_client(1, buffer, input.rs_id);
                 
                 if (!Pquery_active && !Tquery_active){
-                if (clients < input.tcpsessions){
-                    bestpops = input.bestpops - 1;
-                    strcpy(pop[0].ipport.ip, input.ipaddr);
-                    strcpy(pop[0].ipport.port, input.tport);
-                    pop[0].key = 0;
-                }else bestpops = input.bestpops;
-                if (bestpops > 0){
-                    memset(buffer, '\0', strlen(buffer));
-                    sprintf(buffer, "%04X", ++query_num);
-                    ptp_encoder("PQ", buffer, bestpops, 0, NULL); 
-                    Pquery_active = true;PQ_time = time(NULL);
-                    send_downstream(&clients, buffer);}
+                    memset(pop, 0, input.bestpops*sizeof(struct pop));
+                    for (int i = 0; i < input.bestpops; i++) pop[i].key = -1;
+                    strcpy(pop[0].ipport.ip, input.ipaddr);strcpy(pop[0].ipport.port, input.tport);pop[0].key = 0;
+                    bestpops = (clients < input.tcpsessions) ? input.bestpops - 1 : input.bestpops;
+                    if (bestpops > 0){
+                        memset(buffer, '\0', strlen(buffer));
+                        sprintf(buffer, "%04X", ++query_num);
+                        ptp_encoder("PQ", buffer, bestpops, 0, NULL); 
+                        Pquery_active = true;PQ_time = time(NULL);
+                        send_downstream(&clients, buffer);}
                 }
             }
             if (Pquery_active) if (time(NULL) - PQ_time >= 2){Pquery_active = false;if(input.debug)printf("PQ timeout\n");}
