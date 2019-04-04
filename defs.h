@@ -14,7 +14,7 @@
 #include <time.h>
 #include <netdb.h>
 
-#define BUFFER_SIZE 512
+#define BUFFER_SIZE 1024
 
 struct udp_protocol{
     bool ROOTIS;
