@@ -194,7 +194,7 @@ void ptp_decoder (char *message, struct message *decoded, int key){
 int checkForMany(char *yetToProcess, char *readyToRead){
 
     int size = 0;
-    char *token = NULL;
+    char *token = NULL, tmp[BUFFER_SIZE];
     
     if (!strncasecmp(yetToProcess, "DA", 2)){//logic to know where to find the end of a DA
         sscanf(yetToProcess, "%*s %X", &size);
@@ -212,8 +212,10 @@ int checkForMany(char *yetToProcess, char *readyToRead){
                 token = &yetToProcess[i+1];
                 strncpy(readyToRead, yetToProcess, i+1);
                 break;}         
-                
-    strcpy(yetToProcess, token);
+
+    strcpy(tmp, token);
+    memset(yetToProcess, 0, BUFFER_SIZE);
+    strcpy(yetToProcess, tmp);
     if (token != NULL && !strcasecmp(yetToProcess, "\0")) return 0; //if nothing else left to process
     else if (token == NULL){printf("This shouldnt happen -> checkForMany()\n");exit(1);} //if message is not formated correctly
     else return 1; //if there is still something left to process before reading anything from any socket
