@@ -1,5 +1,12 @@
 #include "defs.h"
 
+/**
+ * 
+ * 
+ * Encodes a message of type "command" in "message" that might contain "ipport"
+ * 
+ * 
+ * */
 void udp_encoder (char *command, char *message, struct ipport *ipport){//WHOISROOT, REMOVE, DUMP, POPREQ
     //builds WHOISROOT message
     if (strcasecmp(command, "WHOISROOT") == 0){
@@ -22,6 +29,12 @@ void udp_encoder (char *command, char *message, struct ipport *ipport){//WHOISRO
     return;
 }
 
+/**
+ * 
+ * Decodes "message" of the UDP protocol type and stores info in "decoded"
+ * Sets to true flag associated with received message
+ * 
+ * */
 void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STREAMS, ERROR, POPRESP, POPREQ
 
     //catches a ROOTIS, POPRESP and non empty STREAM
@@ -47,14 +60,20 @@ void udp_decoder (char *message, struct message *decoded){//URROOT, ROOTIS, STRE
     //catches a POPREQ
     if (!strcasecmp(decoded->command, "POPREQ")){node.udp.POPREQ = true;return;}
 
-    //catches empty stream
+    //catches empty STREAM
     if (!strcasecmp(decoded->command, "STREAMS")) printf("Streams:\nNo streams running\n");
     return;
 }
 
+/**
+ * 
+ * 
+ * Decodes user input, changing flags associated with the command
+ * 
+ * */
 void user_decoder (char * message){
 
-    char command[10];
+    char command[10];memset(command, 0, 10);
     char args[10];
     sscanf(message, "%s %s", command, args);
     if (!strcasecmp(command, "streams")) node.user.streams = true;
@@ -77,6 +96,14 @@ void user_decoder (char * message){
     
 }
 
+
+/**
+ * 
+ * Builds message of type "command" into "data" with info from "data", "int1", "int2" and/or "ipport"
+ * 
+ * 
+ * 
+ * */
 void ptp_encoder(char * command, char * data, int int1, int int2, struct ipport *ipport){
     char message[BUFFER_SIZE], *token;
 
@@ -98,6 +125,13 @@ void ptp_encoder(char * command, char * data, int int1, int int2, struct ipport 
     strcpy(data, message);
 }
 
+/**
+ * 
+ * Decodes and sets flags according to message received
+ * Stores info of the message for simple to process messagess
+ * int key needed to know which fd to associate the NP received
+ * 
+ * */
 void ptp_decoder (char *message, struct message *decoded, int key){
 
     char command[10];
@@ -149,22 +183,30 @@ void ptp_decoder (char *message, struct message *decoded, int key){
         else{printf("Bad ptp message format\n%s\n", message);exit(1);}}
 }
 
+/**
+ * 
+ * Function executed before any decoder is called.
+ * Checks if buffer brings more than 1 message,
+ * Stores in "readyToRead" a single message, ready to be decoded
+ * Stores in "yetToProcess" anything still left in the previous buffer, to rerun this function
+ * 
+ * */
 int checkForMany(char *yetToProcess, char *readyToRead){
 
     int size = 0;
     char *token = NULL;
     
-    if (!strncasecmp(yetToProcess, "DA", 2)){
+    if (!strncasecmp(yetToProcess, "DA", 2)){//logic to know where to find the end of a DA
         sscanf(yetToProcess, "%*s %X", &size);
         token = &yetToProcess[0]; token += 8+size;
         strncpy(readyToRead, yetToProcess, 8+size);
-    }else if(!strncasecmp(yetToProcess, "TR", 2)){
+    }else if(!strncasecmp(yetToProcess, "TR", 2)){//logic to find the end of a TR
         for (int i = 0; yetToProcess[i] != '\0'; i++)
             if(yetToProcess[i] == '\n' && yetToProcess[i+1] == '\n'){ 
                 token = &yetToProcess[i+2];
                 strncpy(readyToRead, yetToProcess, i+2);
                 break;}
-    }else 
+    }else //any other message ends with a \n
         for (int i = 0; yetToProcess[i] != '\0'; i++)
             if(yetToProcess[i] == '\n'){
                 token = &yetToProcess[i+1];
@@ -172,7 +214,7 @@ int checkForMany(char *yetToProcess, char *readyToRead){
                 break;}         
                 
     strcpy(yetToProcess, token);
-    if (token != NULL && !strcasecmp(yetToProcess, "\0")) return 0;
-    else if (token == NULL){printf("This shouldnt happen -> checkForMany()\n");exit(1);}
-    else return 1;
+    if (token != NULL && !strcasecmp(yetToProcess, "\0")) return 0; //if nothing else left to process
+    else if (token == NULL){printf("This shouldnt happen -> checkForMany()\n");exit(1);} //if message is not formated correctly
+    else return 1; //if there is still something left to process before reading anything from any socket
 }

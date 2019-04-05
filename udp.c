@@ -17,7 +17,7 @@ void udp_client (int key, char *buffer, struct ipport ipport){
     
     if((fd=socket(res->ai_family,res->ai_socktype,res->ai_protocol))==-1){perror("udp_client socket()");exit(1);}
     //if(input.debug)printf("cudp socket created %d\n", fd);
-    
+    if(input.debug)printf("Sending: %s", buffer);
     if((n=sendto(fd,buffer,strlen(buffer),0,res->ai_addr,res->ai_addrlen))==-1){perror("udp_client sendto()");exit(1);}
 
     //condition when REMOVE is sent and no answer is expected. would get stuck on recvfrom
@@ -45,9 +45,7 @@ void udp_client (int key, char *buffer, struct ipport ipport){
         break;
     }
     
-    //printf("UDP --> %s", buffer);
-    freeaddrinfo(res);
-    close(fd);//if(input.debug)printf("cudp socket closing %d\n", fd);
+    freeaddrinfo(res);close(fd);
 
     return;
 } 

@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "defs.h"
 
 void inputHandler (char **argv, int argc){
@@ -9,7 +5,7 @@ void inputHandler (char **argv, int argc){
     char buffer[BUFFER_SIZE];
     struct message message;
 
-    // DEFAULT DONE
+    // fILLS DEFAULT VALUES
     strcpy(input.ipaddr, "\n");
     strcpy(input.tport,"58000");
     strcpy(input.uport,"58000");
@@ -18,18 +14,20 @@ void inputHandler (char **argv, int argc){
     input.tcpsessions = 1;
     input.bestpops = 1;
     input.tsecs = 5;
-    input.display = false;
-    input.debug = true;
+    input.display = true;
+    input.debug = false;
     input.help = false;
     input.SF = false;
     input.format = true;
 
-    if (argc == 1) {
+    if (argc == 1) {//if no flags detected
         display_help();
+        print_input();
         strcpy(buffer, "DUMP\n");
         udp_client(0, buffer, input.rs_id);
         udp_decoder(buffer, &message);
-        printf("%s\n", buffer);
+        char *token = &buffer[0] + 8;
+        printf("Streams:\n%s\n", token);
         exit(0);}
 
     // LOOKS FOR FLAGS
@@ -48,15 +46,18 @@ void inputHandler (char **argv, int argc){
 
 
     if (input.help == true){display_help(); exit(0);}
+
+    //checks for the only mandatory flag content
     if (strcasecmp(input.ipaddr, "\n") == 0){printf("Must specify application IP\n");display_help();exit(0);}
 
-    sscanf(argv[1], "%[^:]%*[:]%[^:]%*[:]%s", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
-
+    if (sscanf(argv[1], "%[^:]%*[:]%[^:]%*[:]%s", input.stream_id.name, input.stream_id.ip, input.stream_id.port) != 3){
+        printf("You must provide a stream ID\n");
+        display_help();exit(0);
+    }
     return;
 }
 
 void display_help (){
-
     printf("./iamroot [<streamID>] [-i <ipaddr>] [-t <tport>] [-u <uport>]\n"); 
     printf("\t\t       [-s <rsaddr>[:<rsport>]]\n");
     printf("\t\t       [-p <tcpsessions>]\n");
@@ -66,10 +67,10 @@ void display_help (){
 }
 
 void print_input(){
-    printf("StreamID: %s:%s:%s\n", input.stream_id.name, input.stream_id.ip, input.stream_id.port);
-    printf("Self IP, TCP and UDP ports: %s - %s - %s\n", input.ipaddr, input.tport, input.uport);
+    printf("DEFAULT VALUES\n");
+    printf("TCP and UDP ports: %s - %s\n", input.tport, input.uport);
     printf("Root Server: %s:%s\n", input.rs_id.ip, input.rs_id.port);
     printf("Application variables: %d (sessions) - %d (bestp) - %d (tsecs)\n", input.tcpsessions, input.bestpops, input.tsecs);
-    printf("Flags: %d %d %d\n", input.display, input.debug, input.help);
+    printf("Flags: %d %d %d\n\n\n", input.display, input.debug, input.help);
     return;
 }
